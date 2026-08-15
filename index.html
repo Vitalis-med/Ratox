@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Financeiro — Atlética Ratox</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#0B1F3A;
+    --navy-2:#132B52;
+    --navy-3:#1C3868;
+    --orange:#F5821F;
+    --orange-dark:#D96A0F;
+    --bg:#F4F6FA;
+    --card:#FFFFFF;
+    --text:#1A2233;
+    --text-muted:#5B6B8C;
+    --border:#E2E6EE;
+    --good:#1F9254;
+    --warning:#D97706;
+    --critical:#D64545;
+    --c1:#F5821F; --c2:#2F5AA8; --c3:#B04A2E; --c4:#D99A2B; --c5:#00918F; --c6:#7A4FA0;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+  .hidden{display:none !important;}
+
+  /* ---------- LOGIN ---------- */
+  #login-screen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--navy) 0%, var(--navy-3) 60%, var(--orange-dark) 130%);
+    padding:20px;
+  }
+  .login-card{
+    background:var(--card);border-radius:var(--radius);padding:36px 32px;width:100%;max-width:380px;
+    box-shadow:0 20px 50px rgba(11,31,58,.35);
+  }
+  .login-brand{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:24px;}
+  .login-badge{
+    width:56px;height:56px;border-radius:14px;background:var(--navy);
+    display:flex;align-items:center;justify-content:center;color:var(--orange);font-weight:800;font-size:22px;
+    border:2px solid var(--orange);
+  }
+  .login-brand h1{font-size:18px;margin:6px 0 0;text-align:center;color:var(--navy);}
+  .login-brand p{margin:0;font-size:12.5px;color:var(--text-muted);text-align:center;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--text-muted);margin-bottom:5px;}
+  .field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;transition:border-color .15s;}
+  .field input:focus{border-color:var(--orange);}
+  .btn-primary{
+    width:100%;padding:11px 12px;border:none;border-radius:8px;background:var(--orange);color:#fff;
+    font-weight:700;font-size:14px;letter-spacing:.2px;transition:background .15s;
+  }
+  .btn-primary:hover{background:var(--orange-dark);}
+  .btn-primary:disabled{opacity:.6;cursor:default;}
+  #login-error{
+    background:#FDEDEA;color:#9A2B1F;border:1px solid #F3C6BB;border-radius:8px;padding:8px 10px;
+    font-size:12.5px;margin-bottom:14px;display:none;
+  }
+  .login-foot{margin-top:16px;text-align:center;font-size:11.5px;color:var(--text-muted);}
+
+  /* ---------- APP SHELL ---------- */
+  #app{display:none;min-height:100vh;}
+  .topbar{
+    background:var(--navy);color:#fff;padding:0 22px;height:60px;display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.15);
+  }
+  .topbar-brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.3px;}
+  .topbar-brand .dot{width:10px;height:10px;border-radius:50%;background:var(--orange);}
+  .topbar-brand small{display:block;font-weight:500;font-size:11px;color:#B9C4DA;letter-spacing:.2px;}
+  .topbar-user{display:flex;align-items:center;gap:12px;font-size:13px;}
+  .topbar-user span{color:#CBD5EA;}
+  .btn-logout{
+    background:transparent;border:1px solid #33456B;color:#fff;padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:600;
+  }
+  .btn-logout:hover{background:#152C52;}
+
+  .tabs{
+    display:flex;gap:4px;background:var(--navy-2);padding:0 18px;overflow-x:auto;
+  }
+  .tab-btn{
+    background:transparent;border:none;color:#B9C4DA;padding:12px 16px;font-size:13.5px;font-weight:600;
+    border-bottom:3px solid transparent;white-space:nowrap;
+  }
+  .tab-btn.active{color:#fff;border-bottom-color:var(--orange);}
+  .tab-btn:hover{color:#fff;}
+
+  main{max-width:1180px;margin:0 auto;padding:24px 20px 60px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .section-title{font-size:19px;font-weight:800;color:var(--navy);margin:0 0 4px;}
+  .section-sub{font-size:13px;color:var(--text-muted);margin:0 0 18px;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .kpi-card{background:var(--card);border-radius:var(--radius);padding:16px 18px;border:1px solid var(--border);}
+  .kpi-card .kpi-label{font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+  .kpi-card .kpi-value{font-size:24px;font-weight:800;margin-top:6px;color:var(--navy);}
+  .kpi-card .kpi-value.pos{color:var(--good);}
+  .kpi-card .kpi-value.neg{color:var(--critical);}
+  .kpi-card .kpi-note{font-size:11.5px;color:var(--text-muted);margin-top:4px;}
+
+  .grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:20px;}
+  .grid-2b{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:18px 20px;}
+  .card h3{margin:0 0 14px;font-size:14.5px;font-weight:700;color:var(--navy);}
+  .card-foot-note{font-size:11px;color:var(--text-muted);margin-top:10px;}
+  .chart-wrap{position:relative;height:230px;}
+  .chart-wrap.small{height:200px;}
+
+  .legend-row{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:12px;font-size:12px;color:var(--text-muted);}
+  .legend-row .item{display:flex;align-items:center;gap:6px;}
+  .legend-row .sw{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:var(--text-muted);
+    padding:8px 10px;border-bottom:1.5px solid var(--border);font-weight:700;
+  }
+  tbody td{padding:10px 10px;border-bottom:1px solid var(--border);}
+  tbody tr:hover{background:#FAFBFD;}
+  .table-scroll{overflow-x:auto;}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:100px;font-size:11.5px;font-weight:700;}
+  .pill.good{background:#E7F6ED;color:var(--good);}
+  .pill.warning{background:#FDF1DE;color:var(--warning);}
+  .pill.critical{background:#FBE7E5;color:var(--critical);}
+  .pill.muted{background:#EEF1F6;color:var(--text-muted);}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .toolbar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .select-input{padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;}
+  .btn{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:700;border:1.5px solid transparent;}
+  .btn-add{background:var(--orange);color:#fff;}
+  .btn-add:hover{background:var(--orange-dark);}
+  .btn-ghost{background:#fff;border-color:var(--border);color:var(--navy);}
+  .btn-ghost:hover{border-color:var(--orange);}
+  .btn-sm{padding:5px 10px;font-size:11.5px;border-radius:6px;}
+  .btn-mark{background:var(--good);color:#fff;border:none;}
+  .btn-mark:hover{opacity:.9;}
+
+  .form-panel{
+    background:#FBFCFE;border:1.5px dashed var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:18px;display:none;
+  }
+  .form-panel.open{display:block;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px;}
+  .form-grid .field{margin-bottom:0;}
+  .form-actions{display:flex;gap:10px;justify-content:flex-end;}
+
+  .badge-exemplo{font-size:10px;font-weight:700;color:#9A6B1F;background:#FFF3DD;padding:2px 7px;border-radius:100px;border:1px solid #F0D9A8;}
+
+  .empty-note{padding:22px;text-align:center;color:var(--text-muted);font-size:13px;}
+
+  footer.app-footer{text-align:center;color:var(--text-muted);font-size:11.5px;padding:20px 0 40px;}
+
+  #toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--navy);color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s;z-index:100;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width: 880px){
+    .kpi-grid{grid-template-columns:repeat(2,1fr);}
+    .grid-2, .grid-2b{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-badge">AR</div>
+      <h1>Painel Financeiro<br>Atlética Ratox</h1>
+      <p>Atlética de Medicina · Acesso restrito à diretoria</p>
+    </div>
+    <div id="login-error"></div>
+    <form id="login-form">
+      <div class="field">
+        <label for="login-email">E-mail</label>
+        <input id="login-email" type="email" required autocomplete="username" placeholder="voce@exemplo.com">
+      </div>
+      <div class="field">
+        <label for="login-password">Senha</label>
+        <input id="login-password" type="password" required autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn-primary" id="login-submit">Entrar</button>
+    </form>
+    <div class="login-foot">Esqueceu a senha? Peça para um admin redefinir pelo painel do Supabase.</div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <span class="dot"></span>
+      <div>
+        Atlética Ratox
+        <small>Medicina · Painel Financeiro</small>
+      </div>
+    </div>
+    <div class="topbar-user">
+      <span id="user-email"></span>
+      <button class="btn-logout" id="btn-logout">Sair</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-view="dashboard">Dashboard</button>
+    <button class="tab-btn" data-view="socios">Sócios</button>
+    <button class="tab-btn" data-view="mensalidades">Mensalidades</button>
+    <button class="tab-btn" data-view="despesas">Despesas</button>
+    <button class="tab-btn" data-view="eventos">Eventos &amp; Patrocínios</button>
+  </div>
+
+  <main>
+
+    <!-- ---------- DASHBOARD ---------- -->
+    <section class="view active" id="view-dashboard">
+      <h2 class="section-title">Visão geral</h2>
+      <p class="section-sub" id="dash-updated">Atualizando…</p>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Saldo atual</div>
+          <div class="kpi-value" id="kpi-saldo">—</div>
+          <div class="kpi-note">Receitas totais − despesas totais</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Receitas do mês</div>
+          <div class="kpi-value pos" id="kpi-receitas-mes">—</div>
+          <div class="kpi-note" id="kpi-receitas-mes-note">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Despesas do mês</div>
+          <div class="kpi-value neg" id="kpi-despesas-mes">—</div>
+          <div class="kpi-note" id="kpi-despesas-mes-note">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Inadimplência do mês</div>
+          <div class="kpi-value" id="kpi-inadimplencia">—</div>
+          <div class="kpi-note" id="kpi-inadimplencia-note">—</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Fluxo de caixa mensal</h3>
+          <div class="chart-wrap"><canvas id="chart-fluxo"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Mensalidades do mês</h3>
+          <div class="chart-wrap small"><canvas id="chart-mensalidades-status"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-2b">
+        <div class="card">
+          <h3>Despesas por categoria (últimos 6 meses)</h3>
+          <div class="chart-wrap"><canvas id="chart-categorias"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Próximos eventos</h3>
+          <div id="dash-eventos-list"><p class="empty-note">Carregando…</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- SÓCIOS ---------- -->
+    <section class="view" id="view-socios">
+      <h2 class="section-title">Sócios</h2>
+      <p class="section-sub">Cadastro de associados da atlética.</p>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select class="select-input" id="filtro-socio-status">
+            <option value="todos">Todos os status</option>
+            <option value="ativo">Ativos</option>
+            <option value="inativo">Inativos</option>
+          </select>
+        </div>
+        <button class="btn btn-add" id="btn-toggle-form-socio">+ Novo sócio</button>
+      </div>
+
+      <div class="form-panel" id="form-panel-socio">
+        <div class="form-grid">
+          <div class="field"><label>Nome completo</label><input id="socio-nome" type="text" required></div>
+          <div class="field"><label>Matrícula</label><input id="socio-matricula" type="text"></div>
+          <div class="field"><label>Curso</label><input id="socio-curso" type="text"></div>
+          <div class="field"><label>Telefone</label><input id="socio-telefone" type="text"></div>
+          <div class="field"><label>E-mail</label><input id="socio-email" type="email"></div>
+          <div class="field"><label>Data de ingresso</label><input id="socio-data" type="date"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="btn-cancel-socio">Cancelar</button>
+          <button class="btn btn-add" id="btn-save-socio">Salvar sócio</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Nome</th><th>Curso</th><th>Contato</th><th>Ingresso</th><th>Status</th></tr></thead>
+            <tbody id="tbody-socios"><tr><td colspan="5" class="empty-note">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- MENSALIDADES ---------- -->
+    <section class="view" id="view-mensalidades">
+      <h2 class="section-title">Mensalidades</h2>
+      <p class="section-sub">Controle de pagamento mensal dos sócios.</p>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <input type="month" class="select-input" id="mensalidade-mes">
+          <button class="btn btn-ghost btn-sm" id="btn-gerar-mensalidades">Gerar mensalidades do mês</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Sócio</th><th>Valor</th><th>Status</th><th>Pago em</th><th>Forma</th><th></th></tr></thead>
+            <tbody id="tbody-mensalidades"><tr><td colspan="6" class="empty-note">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- DESPESAS ---------- -->
+    <section class="view" id="view-despesas">
+      <h2 class="section-title">Despesas</h2>
+      <p class="section-sub">Todos os gastos da atlética.</p>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select class="select-input" id="filtro-despesa-categoria"><option value="todas">Todas as categorias</option></select>
+        </div>
+        <button class="btn btn-add" id="btn-toggle-form-despesa">+ Nova despesa</button>
+      </div>
+
+      <div class="form-panel" id="form-panel-despesa">
+        <div class="form-grid">
+          <div class="field"><label>Descrição</label><input id="despesa-descricao" type="text" required></div>
+          <div class="field"><label>Categoria</label><select id="despesa-categoria"></select></div>
+          <div class="field"><label>Valor (Gs)</label><input id="despesa-valor" type="number" step="1000" min="0"></div>
+          <div class="field"><label>Data</label><input id="despesa-data" type="date"></div>
+          <div class="field"><label>Forma de pagamento</label>
+            <select id="despesa-forma">
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="pix">Pix</option>
+              <option value="tarjeta">Tarjeta</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="btn-cancel-despesa">Cancelar</button>
+          <button class="btn btn-add" id="btn-save-despesa">Salvar despesa</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Descrição</th><th>Categoria</th><th>Data</th><th>Forma</th><th>Valor</th></tr></thead>
+            <tbody id="tbody-despesas"><tr><td colspan="5" class="empty-note">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- EVENTOS & PATROCÍNIOS ---------- -->
+    <section class="view" id="view-eventos">
+      <h2 class="section-title">Eventos &amp; Patrocínios</h2>
+      <p class="section-sub">Festas, campeonatos, vendas e receitas de patrocinadores.</p>
+
+      <div class="toolbar">
+        <div></div>
+        <button class="btn btn-add" id="btn-toggle-form-evento">+ Novo evento</button>
+      </div>
+
+      <div class="form-panel" id="form-panel-evento">
+        <div class="form-grid">
+          <div class="field"><label>Nome do evento</label><input id="evento-nome" type="text" required></div>
+          <div class="field"><label>Tipo</label>
+            <select id="evento-tipo">
+              <option value="festa">Festa</option>
+              <option value="campeonato">Campeonato</option>
+              <option value="venda">Venda</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div class="field"><label>Data</label><input id="evento-data" type="date"></div>
+          <div class="field"><label>Receita prevista (Gs)</label><input id="evento-receita-prevista" type="number" step="1000" min="0"></div>
+          <div class="field"><label>Receita real (Gs)</label><input id="evento-receita-real" type="number" step="1000" min="0"></div>
+          <div class="field"><label>Status</label>
+            <select id="evento-status">
+              <option value="planejado">Planejado</option>
+              <option value="realizado">Realizado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="btn-cancel-evento">Cancelar</button>
+          <button class="btn btn-add" id="btn-save-evento">Salvar evento</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Evento</th><th>Tipo</th><th>Data</th><th>Prevista</th><th>Real</th><th>Status</th></tr></thead>
+            <tbody id="tbody-eventos"><tr><td colspan="6" class="empty-note">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <h3 style="margin:0;color:var(--navy);font-size:15px;">Patrocínios</h3>
+        <button class="btn btn-add" id="btn-toggle-form-patrocinio">+ Novo patrocínio</button>
+      </div>
+
+      <div class="form-panel" id="form-panel-patrocinio">
+        <div class="form-grid">
+          <div class="field"><label>Patrocinador (nome)</label><input id="patrocinio-patrocinador" type="text" placeholder="Nome novo ou existente" required></div>
+          <div class="field"><label>Evento vinculado</label><select id="patrocinio-evento"><option value="">Nenhum</option></select></div>
+          <div class="field"><label>Valor (Gs)</label><input id="patrocinio-valor" type="number" step="1000" min="0"></div>
+          <div class="field"><label>Data</label><input id="patrocinio-data" type="date"></div>
+          <div class="field"><label>Descrição</label><input id="patrocinio-descricao" type="text"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="btn-cancel-patrocinio">Cancelar</button>
+          <button class="btn btn-add" id="btn-save-patrocinio">Salvar patrocínio</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Patrocinador</th><th>Evento</th><th>Data</th><th>Valor</th><th>Descrição</th></tr></thead>
+            <tbody id="tbody-patrocinios"><tr><td colspan="5" class="empty-note">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">Painel Financeiro — Atlética Ratox · dados via Supabase</footer>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SUPABASE_URL = 'https://blopjxlgttrclxhklwke.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_pRtSc3DitrLWhLoYxsQD8g_k9mepbfI';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const PYG = new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 });
+const fmtMoney = (v) => PYG.format(Number(v || 0));
+const fmtDate = (v) => v ? new Date(v + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+
+const CATEGORICAL = ['#F5821F','#2F5AA8','#B04A2E','#D99A2B','#00918F','#7A4FA0'];
+const STATUS_COLORS = { pago: '#1F9254', pendente: '#D97706', atrasado: '#D64545' };
+const STATUS_LABELS = { pago: 'Pago', pendente: 'Pendente', atrasado: 'Atrasado' };
+
+let charts = {};
+let cache = { socios: [], categorias: [], eventos: [] };
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+const loginScreen = document.getElementById('login-screen');
+const appEl = document.getElementById('app');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const loginSubmit = document.getElementById('login-submit');
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loginError.style.display = 'none';
+  loginSubmit.disabled = true;
+  loginSubmit.textContent = 'Entrando…';
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  loginSubmit.disabled = false;
+  loginSubmit.textContent = 'Entrar';
+  if (error) {
+    loginError.textContent = error.message === 'Invalid login credentials'
+      ? 'E-mail ou senha incorretos.'
+      : error.message;
+    loginError.style.display = 'block';
+  }
+});
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await db.auth.signOut();
+});
+
+db.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    showApp(session);
+  } else {
+    appEl.style.display = 'none';
+    loginScreen.style.display = 'flex';
+  }
+});
+
+async function showApp(session){
+  loginScreen.style.display = 'none';
+  appEl.style.display = 'block';
+  document.getElementById('user-email').textContent = session.user.email;
+  await loadEverything();
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.view).classList.add('active');
+  });
+});
+
+/* ============================================================
+   FORM PANEL TOGGLES
+   ============================================================ */
+function wireToggle(btnId, panelId, cancelId){
+  const btn = document.getElementById(btnId);
+  const panel = document.getElementById(panelId);
+  const cancel = document.getElementById(cancelId);
+  btn.addEventListener('click', () => panel.classList.toggle('open'));
+  cancel.addEventListener('click', () => panel.classList.remove('open'));
+}
+wireToggle('btn-toggle-form-socio','form-panel-socio','btn-cancel-socio');
+wireToggle('btn-toggle-form-despesa','form-panel-despesa','btn-cancel-despesa');
+wireToggle('btn-toggle-form-evento','form-panel-evento','btn-cancel-evento');
+wireToggle('btn-toggle-form-patrocinio','form-panel-patrocinio','btn-cancel-patrocinio');
+
+/* ============================================================
+   LOAD EVERYTHING
+   ============================================================ */
+async function loadEverything(){
+  await Promise.all([loadCategorias(), loadSocios(), loadEventosDropdownAndTable()]);
+  await Promise.all([loadDespesas(), loadMensalidades(), loadPatrocinios()]);
+  await loadDashboard();
+}
+
+/* ---------------- CATEGORIAS ---------------- */
+async function loadCategorias(){
+  const { data, error } = await db.from('categorias_despesa').select('*').order('nome');
+  if (error) { console.error(error); toast('Erro ao carregar categorias'); return; }
+  cache.categorias = data || [];
+  const sel = document.getElementById('despesa-categoria');
+  sel.innerHTML = cache.categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+  const filtro = document.getElementById('filtro-despesa-categoria');
+  filtro.innerHTML = '<option value="todas">Todas as categorias</option>' +
+    cache.categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+}
+
+/* ---------------- SÓCIOS ---------------- */
+async function loadSocios(){
+  const { data, error } = await db.from('socios').select('*').order('nome');
+  if (error) { console.error(error); toast('Erro ao carregar sócios'); return; }
+  cache.socios = data || [];
+  renderSocios();
+}
+
+function renderSocios(){
+  const filtro = document.getElementById('filtro-socio-status').value;
+  const rows = cache.socios.filter(s => filtro === 'todos' || s.status === filtro);
+  const tbody = document.getElementById('tbody-socios');
+  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty-note">Nenhum sócio encontrado.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(s => `
+    <tr>
+      <td>${s.nome}${s.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
+      <td>${s.curso || '—'}</td>
+      <td>${s.telefone || s.email || '—'}</td>
+      <td>${fmtDate(s.data_ingresso)}</td>
+      <td><span class="pill ${s.status === 'ativo' ? 'good' : 'muted'}">${s.status === 'ativo' ? 'Ativo' : 'Inativo'}</span></td>
+    </tr>
+  `).join('');
+}
+document.getElementById('filtro-socio-status').addEventListener('change', renderSocios);
+
+document.getElementById('btn-save-socio').addEventListener('click', async () => {
+  const nome = document.getElementById('socio-nome').value.trim();
+  if (!nome){ toast('Informe o nome do sócio'); return; }
+  const payload = {
+    nome,
+    matricula: document.getElementById('socio-matricula').value.trim() || null,
+    curso: document.getElementById('socio-curso').value.trim() || null,
+    telefone: document.getElementById('socio-telefone').value.trim() || null,
+    email: document.getElementById('socio-email').value.trim() || null,
+    data_ingresso: document.getElementById('socio-data').value || new Date().toISOString().slice(0,10),
+  };
+  const { error } = await db.from('socios').insert(payload);
+  if (error){ console.error(error); toast('Erro ao salvar sócio: ' + error.message); return; }
+  toast('Sócio adicionado!');
+  document.getElementById('form-panel-socio').classList.remove('open');
+  ['socio-nome','socio-matricula','socio-curso','socio-telefone','socio-email','socio-data'].forEach(id => document.getElementById(id).value = '');
+  await loadSocios();
+  await loadDashboard();
+});
+
+/* ---------------- DESPESAS ---------------- */
+async function loadDespesas(){
+  const { data, error } = await db.from('despesas').select('*, categorias_despesa(nome,cor)').order('data', { ascending: false });
+  if (error) { console.error(error); toast('Erro ao carregar despesas'); return; }
+  cache.despesas = data || [];
+  renderDespesas();
+}
+
+function renderDespesas(){
+  const filtro = document.getElementById('filtro-despesa-categoria').value;
+  const rows = cache.despesas.filter(d => filtro === 'todas' || d.categoria_id === filtro);
+  const tbody = document.getElementById('tbody-despesas');
+  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty-note">Nenhuma despesa encontrada.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(d => `
+    <tr>
+      <td>${d.descricao}${d.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
+      <td><span class="pill muted" style="color:${d.categorias_despesa?.cor || '#5B6B8C'};background:${(d.categorias_despesa?.cor || '#5B6B8C')}1A;">${d.categorias_despesa?.nome || 'Sem categoria'}</span></td>
+      <td>${fmtDate(d.data)}</td>
+      <td>${d.forma_pagamento || '—'}</td>
+      <td><strong>${fmtMoney(d.valor)}</strong></td>
+    </tr>
+  `).join('');
+}
+document.getElementById('filtro-despesa-categoria').addEventListener('change', renderDespesas);
+
+document.getElementById('btn-save-despesa').addEventListener('click', async () => {
+  const descricao = document.getElementById('despesa-descricao').value.trim();
+  const valor = parseFloat(document.getElementById('despesa-valor').value);
+  if (!descricao || !valor){ toast('Informe descrição e valor'); return; }
+  const payload = {
+    descricao,
+    categoria_id: document.getElementById('despesa-categoria').value || null,
+    valor,
+    data: document.getElementById('despesa-data').value || new Date().toISOString().slice(0,10),
+    forma_pagamento: document.getElementById('despesa-forma').value,
+  };
+  const { error } = await db.from('despesas').insert(payload);
+  if (error){ console.error(error); toast('Erro ao salvar despesa: ' + error.message); return; }
+  toast('Despesa registrada!');
+  document.getElementById('form-panel-despesa').classList.remove('open');
+  ['despesa-descricao','despesa-valor','despesa-data'].forEach(id => document.getElementById(id).value = '');
+  await loadDespesas();
+  await loadDashboard();
+});
+
+/* ---------------- MENSALIDADES ---------------- */
+function currentMonthInputValue(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+document.getElementById('mensalidade-mes').value = currentMonthInputValue();
+document.getElementById('mensalidade-mes').addEventListener('change', loadMensalidades);
+
+function refDateFromMonthInput(){
+  const v = document.getElementById('mensalidade-mes').value || currentMonthInputValue();
+  return v + '-01';
+}
+
+async function loadMensalidades(){
+  const referencia = refDateFromMonthInput();
+  const { data, error } = await db.from('mensalidades').select('*, socios(nome, status)').eq('referencia', referencia);
+  if (error) { console.error(error); toast('Erro ao carregar mensalidades'); return; }
+  cache.mensalidadesMes = data || [];
+  renderMensalidades();
+}
+
+function renderMensalidades(){
+  const rows = (cache.mensalidadesMes || []).slice().sort((a,b) => (a.socios?.nome||'').localeCompare(b.socios?.nome||''));
+  const tbody = document.getElementById('tbody-mensalidades');
+  if (!rows.length){
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhuma mensalidade gerada para este mês ainda. Use "Gerar mensalidades do mês".</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(m => `
+    <tr>
+      <td>${m.socios?.nome || '—'}${m.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
+      <td>${fmtMoney(m.valor)}</td>
+      <td><span class="pill ${m.status === 'pago' ? 'good' : (m.status === 'atrasado' ? 'critical' : 'warning')}">${STATUS_LABELS[m.status]}</span></td>
+      <td>${fmtDate(m.data_pagamento)}</td>
+      <td>${m.forma_pagamento || '—'}</td>
+      <td>${m.status !== 'pago' ? `<button class="btn btn-mark btn-sm" data-id="${m.id}">Marcar pago</button>` : ''}</td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('.btn-mark').forEach(b => b.addEventListener('click', () => marcarPago(b.dataset.id)));
+}
+
+async function marcarPago(id){
+  const { error } = await db.from('mensalidades').update({
+    status: 'pago',
+    data_pagamento: new Date().toISOString().slice(0,10),
+    forma_pagamento: 'efectivo'
+  }).eq('id', id);
+  if (error){ toast('Erro: ' + error.message); return; }
+  toast('Mensalidade marcada como paga!');
+  await loadMensalidades();
+  await loadDashboard();
+}
+
+document.getElementById('btn-gerar-mensalidades').addEventListener('click', async () => {
+  const referencia = refDateFromMonthInput();
+  const ativos = cache.socios.filter(s => s.status === 'ativo');
+  if (!ativos.length){ toast('Não há sócios ativos cadastrados'); return; }
+  const payload = ativos.map(s => ({ socio_id: s.id, referencia, valor: 60000, status: 'pendente' }));
+  const { error } = await db.from('mensalidades').upsert(payload, { onConflict: 'socio_id,referencia', ignoreDuplicates: true });
+  if (error){ console.error(error); toast('Erro ao gerar mensalidades: ' + error.message); return; }
+  toast('Mensalidades geradas para o mês!');
+  await loadMensalidades();
+  await loadDashboard();
+});
+
+/* ---------------- EVENTOS ---------------- */
+async function loadEventosDropdownAndTable(){
+  const { data, error } = await db.from('eventos').select('*').order('data', { ascending: false });
+  if (error) { console.error(error); toast('Erro ao carregar eventos'); return; }
+  cache.eventos = data || [];
+  const sel = document.getElementById('patrocinio-evento');
+  sel.innerHTML = '<option value="">Nenhum</option>' + cache.eventos.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+  renderEventos();
+}
+
+function renderEventos(){
+  const tbody = document.getElementById('tbody-eventos');
+  if (!cache.eventos.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhum evento cadastrado.</td></tr>'; return; }
+  const statusPill = { planejado: 'muted', realizado: 'good', cancelado: 'critical' };
+  tbody.innerHTML = cache.eventos.map(e => `
+    <tr>
+      <td>${e.nome}${e.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
+      <td style="text-transform:capitalize;">${e.tipo}</td>
+      <td>${fmtDate(e.data)}</td>
+      <td>${fmtMoney(e.receita_prevista)}</td>
+      <td>${fmtMoney(e.receita_real)}</td>
+      <td><span class="pill ${statusPill[e.status] || 'muted'}">${e.status}</span></td>
+    </tr>
+  `).join('');
+
+  const upcoming = cache.eventos
+    .filter(e => e.status === 'planejado')
+    .sort((a,b) => new Date(a.data) - new Date(b.data))
+    .slice(0, 5);
+  const list = document.getElementById('dash-eventos-list');
+  if (!upcoming.length){
+    list.innerHTML = '<p class="empty-note">Nenhum evento planejado no momento.</p>';
+  } else {
+    list.innerHTML = upcoming.map(e => `
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;">
+        <span>${e.nome}</span><span style="color:var(--text-muted);">${fmtDate(e.data)}</span>
+      </div>`).join('');
+  }
+}
+
+document.getElementById('btn-save-evento').addEventListener('click', async () => {
+  const nome = document.getElementById('evento-nome').value.trim();
+  const data = document.getElementById('evento-data').value;
+  if (!nome || !data){ toast('Informe nome e data do evento'); return; }
+  const payload = {
+    nome,
+    tipo: document.getElementById('evento-tipo').value,
+    data,
+    receita_prevista: parseFloat(document.getElementById('evento-receita-prevista').value) || 0,
+    receita_real: parseFloat(document.getElementById('evento-receita-real').value) || 0,
+    status: document.getElementById('evento-status').value,
+  };
+  const { error } = await db.from('eventos').insert(payload);
+  if (error){ console.error(error); toast('Erro ao salvar evento: ' + error.message); return; }
+  toast('Evento salvo!');
+  document.getElementById('form-panel-evento').classList.remove('open');
+  ['evento-nome','evento-data','evento-receita-prevista','evento-receita-real'].forEach(id => document.getElementById(id).value = '');
+  await loadEventosDropdownAndTable();
+  await loadDashboard();
+});
+
+/* ---------------- PATROCÍNIOS ---------------- */
+async function loadPatrocinios(){
+  const { data, error } = await db.from('patrocinios').select('*, patrocinadores(nome), eventos(nome)').order('data', { ascending: false });
+  if (error) { console.error(error); toast('Erro ao carregar patrocínios'); return; }
+  cache.patrocinios = data || [];
+  const tbody = document.getElementById('tbody-patrocinios');
+  if (!cache.patrocinios.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty-note">Nenhum patrocínio cadastrado.</td></tr>'; return; }
+  tbody.innerHTML = cache.patrocinios.map(p => `
+    <tr>
+      <td>${p.patrocinadores?.nome || '—'}${p.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
+      <td>${p.eventos?.nome || '—'}</td>
+      <td>${fmtDate(p.data)}</td>
+      <td><strong>${fmtMoney(p.valor)}</strong></td>
+      <td>${p.descricao || '—'}</td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('btn-save-patrocinio').addEventListener('click', async () => {
+  const nomePatrocinador = document.getElementById('patrocinio-patrocinador').value.trim();
+  const valor = parseFloat(document.getElementById('patrocinio-valor').value);
+  if (!nomePatrocinador || !valor){ toast('Informe o patrocinador e o valor'); return; }
+
+  let { data: existente } = await db.from('patrocinadores').select('id').eq('nome', nomePatrocinador).maybeSingle();
+  let patrocinadorId = existente?.id;
+  if (!patrocinadorId){
+    const { data: novo, error: errNovo } = await db.from('patrocinadores').insert({ nome: nomePatrocinador }).select('id').single();
+    if (errNovo){ toast('Erro ao criar patrocinador: ' + errNovo.message); return; }
+    patrocinadorId = novo.id;
+  }
+
+  const payload = {
+    patrocinador_id: patrocinadorId,
+    evento_id: document.getElementById('patrocinio-evento').value || null,
+    valor,
+    data: document.getElementById('patrocinio-data').value || new Date().toISOString().slice(0,10),
+    descricao: document.getElementById('patrocinio-descricao').value.trim() || null,
+  };
+  const { error } = await db.from('patrocinios').insert(payload);
+  if (error){ console.error(error); toast('Erro ao salvar patrocínio: ' + error.message); return; }
+  toast('Patrocínio registrado!');
+  document.getElementById('form-panel-patrocinio').classList.remove('open');
+  ['patrocinio-patrocinador','patrocinio-valor','patrocinio-data','patrocinio-descricao'].forEach(id => document.getElementById(id).value = '');
+  await loadPatrocinios();
+  await loadDashboard();
+});
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+async function loadDashboard(){
+  const now = new Date();
+  const mesAtual = monthKey(now);
+
+  // Receitas: mensalidades pagas + patrocínios + eventos realizados
+  const [{ data: mens }, { data: patros }, { data: evs }, { data: desp }] = await Promise.all([
+    db.from('mensalidades').select('valor,status,data_pagamento,referencia'),
+    db.from('patrocinios').select('valor,data'),
+    db.from('eventos').select('receita_real,status,data'),
+    db.from('despesas').select('valor,data,categoria_id, categorias_despesa(nome,cor)'),
+  ]);
+
+  const mensPagas = (mens || []).filter(m => m.status === 'pago' && m.data_pagamento);
+  const totalMensalidades = mensPagas.reduce((s,m) => s + Number(m.valor), 0);
+  const totalPatrocinios = (patros || []).reduce((s,p) => s + Number(p.valor), 0);
+  const totalEventos = (evs || []).filter(e => e.status === 'realizado').reduce((s,e) => s + Number(e.receita_real||0), 0);
+  const totalReceitas = totalMensalidades + totalPatrocinios + totalEventos;
+  const totalDespesas = (desp || []).reduce((s,d) => s + Number(d.valor), 0);
+  const saldo = totalReceitas - totalDespesas;
+
+  const inMonth = (dateStr) => dateStr && monthKey(new Date(dateStr + 'T00:00:00')) === mesAtual;
+  const receitasMes = mensPagas.filter(m => inMonth(m.data_pagamento)).reduce((s,m) => s + Number(m.valor), 0)
+    + (patros || []).filter(p => inMonth(p.data)).reduce((s,p) => s + Number(p.valor), 0)
+    + (evs || []).filter(e => e.status === 'realizado' && inMonth(e.data)).reduce((s,e) => s + Number(e.receita_real||0), 0);
+  const despesasMes = (desp || []).filter(d => inMonth(d.data)).reduce((s,d) => s + Number(d.valor), 0);
+
+  document.getElementById('kpi-saldo').textContent = fmtMoney(saldo);
+  document.getElementById('kpi-saldo').className = 'kpi-value ' + (saldo >= 0 ? 'pos' : 'neg');
+  document.getElementById('kpi-receitas-mes').textContent = fmtMoney(receitasMes);
+  document.getElementById('kpi-receitas-mes-note').textContent = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  document.getElementById('kpi-despesas-mes').textContent = fmtMoney(despesasMes);
+  document.getElementById('kpi-despesas-mes-note').textContent = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+  // Inadimplência do mês atual
+  const referenciaAtual = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  const mensMesAtual = (mens || []).filter(m => m.referencia === referenciaAtual);
+  const emAberto = mensMesAtual.filter(m => m.status !== 'pago').length;
+  const pct = mensMesAtual.length ? Math.round((emAberto / mensMesAtual.length) * 100) : 0;
+  document.getElementById('kpi-inadimplencia').textContent = mensMesAtual.length ? pct + '%' : '—';
+  document.getElementById('kpi-inadimplencia').className = 'kpi-value ' + (pct > 20 ? 'neg' : 'pos');
+  document.getElementById('kpi-inadimplencia-note').textContent = mensMesAtual.length
+    ? `${emAberto} de ${mensMesAtual.length} mensalidades em aberto`
+    : 'Gere as mensalidades do mês na aba Mensalidades';
+
+  document.getElementById('dash-updated').textContent = 'Atualizado em ' + now.toLocaleString('pt-BR');
+
+  renderFluxoCaixaChart(mens || [], patros || [], evs || [], desp || []);
+  renderCategoriasChart(desp || []);
+  renderMensalidadesStatusChart(mensMesAtual);
+}
+
+function lastNMonths(n){
+  const arr = [];
+  const d = new Date();
+  d.setDate(1);
+  for (let i = n-1; i >= 0; i--){
+    const dt = new Date(d.getFullYear(), d.getMonth() - i, 1);
+    arr.push({ key: monthKey(dt), label: dt.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''), date: dt });
+  }
+  return arr;
+}
+
+function renderFluxoCaixaChart(mens, patros, evs, desp){
+  const months = lastNMonths(6);
+  const receitasPorMes = Object.fromEntries(months.map(m => [m.key, 0]));
+  const despesasPorMes = Object.fromEntries(months.map(m => [m.key, 0]));
+
+  mens.filter(m => m.status === 'pago' && m.data_pagamento).forEach(m => {
+    const k = monthKey(new Date(m.data_pagamento + 'T00:00:00'));
+    if (k in receitasPorMes) receitasPorMes[k] += Number(m.valor);
+  });
+  patros.forEach(p => {
+    const k = monthKey(new Date(p.data + 'T00:00:00'));
+    if (k in receitasPorMes) receitasPorMes[k] += Number(p.valor);
+  });
+  evs.filter(e => e.status === 'realizado').forEach(e => {
+    const k = monthKey(new Date(e.data + 'T00:00:00'));
+    if (k in receitasPorMes) receitasPorMes[k] += Number(e.receita_real || 0);
+  });
+  desp.forEach(d => {
+    const k = monthKey(new Date(d.data + 'T00:00:00'));
+    if (k in despesasPorMes) despesasPorMes[k] += Number(d.valor);
+  });
+
+  const ctx = document.getElementById('chart-fluxo');
+  if (charts.fluxo) charts.fluxo.destroy();
+  charts.fluxo = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [
+        { label: 'Receitas', data: months.map(m => receitasPorMes[m.key]), backgroundColor: '#2F5AA8', borderRadius: 4, maxBarThickness: 26 },
+        { label: 'Despesas', data: months.map(m => despesasPorMes[m.key]), backgroundColor: '#F5821F', borderRadius: 4, maxBarThickness: 26 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 11.5 } } },
+        tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${fmtMoney(c.parsed.y)}` } }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#EEF1F6' }, ticks: { callback: v => 'Gs ' + Number(v).toLocaleString('es-PY') } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderCategoriasChart(desp){
+  const months = lastNMonths(6).map(m => m.key);
+  const totals = {};
+  const colors = {};
+  desp.forEach(d => {
+    const k = monthKey(new Date(d.data + 'T00:00:00'));
+    if (!months.includes(k)) return;
+    const nome = d.categorias_despesa?.nome || 'Sem categoria';
+    totals[nome] = (totals[nome] || 0) + Number(d.valor);
+    colors[nome] = d.categorias_despesa?.cor || '#5B6B8C';
+  });
+  const labels = Object.keys(totals).sort((a,b) => totals[b]-totals[a]);
+
+  const ctx = document.getElementById('chart-categorias');
+  if (charts.categorias) charts.categorias.destroy();
+  if (!labels.length){
+    ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+    return;
+  }
+  charts.categorias = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: labels.map(l => totals[l]), backgroundColor: labels.map(l => colors[l]), borderRadius: 4, maxBarThickness: 24 }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => fmtMoney(c.parsed.x) } }
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#EEF1F6' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderMensalidadesStatusChart(mensMesAtual){
+  const counts = { pago: 0, pendente: 0, atrasado: 0 };
+  mensMesAtual.forEach(m => { counts[m.status] = (counts[m.status]||0) + 1; });
+  const ctx = document.getElementById('chart-mensalidades-status');
+  if (charts.status) charts.status.destroy();
+  const total = counts.pago + counts.pendente + counts.atrasado;
+  if (!total){
+    ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+    return;
+  }
+  charts.status = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Pago', 'Pendente', 'Atrasado'],
+      datasets: [{
+        data: [counts.pago, counts.pendente, counts.atrasado],
+        backgroundColor: [STATUS_COLORS.pago, STATUS_COLORS.pendente, STATUS_COLORS.atrasado],
+        borderWidth: 2, borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 11.5 } } },
+        tooltip: { callbacks: { label: (c) => `${c.label}: ${c.parsed} sócio(s)` } }
+      }
+    }
+  });
+}
+
+</script>
+</body>
+</html>
