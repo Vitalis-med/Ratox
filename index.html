@@ -144,6 +144,20 @@
   .btn-sm{padding:5px 10px;font-size:11.5px;border-radius:6px;}
   .btn-mark{background:var(--good);color:#fff;border:none;}
   .btn-mark:hover{opacity:.9;}
+  .btn-edit{background:#fff;border:1.5px solid var(--border);color:var(--navy);}
+  .btn-edit:hover{border-color:var(--orange);}
+  .btn-delete{background:#fff;border:1.5px solid #F3C6BB;color:var(--critical);}
+  .btn-delete:hover{background:#FDEDEA;}
+  .row-actions{display:flex;gap:6px;justify-content:flex-end;white-space:nowrap;}
+
+  /* ---------- READ-ONLY MODE ---------- */
+  body.read-only .admin-only{display:none !important;}
+  .readonly-badge{
+    display:none;background:#33456B;color:#fff;font-size:11px;font-weight:700;
+    padding:4px 10px;border-radius:100px;letter-spacing:.2px;
+  }
+  body.read-only .readonly-badge{display:inline-flex;align-items:center;gap:5px;}
+  body.read-only .readonly-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--orange);}
 
   .form-panel{
     background:#FBFCFE;border:1.5px dashed var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:18px;display:none;
@@ -209,6 +223,7 @@
       </div>
     </div>
     <div class="topbar-user">
+      <span class="readonly-badge" id="readonly-badge">Somente leitura</span>
       <span id="user-email"></span>
       <button class="btn-logout" id="btn-logout">Sair</button>
     </div>
@@ -219,7 +234,8 @@
     <button class="tab-btn" data-view="socios">Sócios</button>
     <button class="tab-btn" data-view="mensalidades">Mensalidades</button>
     <button class="tab-btn" data-view="despesas">Despesas</button>
-    <button class="tab-btn" data-view="eventos">Eventos &amp; Patrocínios</button>
+    <button class="tab-btn" data-view="receitas">Receitas</button>
+    <button class="tab-btn" data-view="eventos">Eventos</button>
   </div>
 
   <main>
@@ -288,16 +304,22 @@
             <option value="inativo">Inativos</option>
           </select>
         </div>
-        <button class="btn btn-add" id="btn-toggle-form-socio">+ Novo sócio</button>
+        <button class="btn btn-add admin-only" id="btn-toggle-form-socio">+ Novo sócio</button>
       </div>
 
-      <div class="form-panel" id="form-panel-socio">
+      <div class="form-panel admin-only" id="form-panel-socio">
         <div class="form-grid">
           <div class="field"><label>Nome completo</label><input id="socio-nome" type="text" required></div>
           <div class="field"><label>Matrícula</label><input id="socio-matricula" type="text"></div>
           <div class="field"><label>Curso</label><input id="socio-curso" type="text"></div>
           <div class="field"><label>Telefone</label><input id="socio-telefone" type="text"></div>
           <div class="field"><label>E-mail</label><input id="socio-email" type="email"></div>
+          <div class="field"><label>Status</label>
+            <select id="socio-status">
+              <option value="ativo">Ativo</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
           <div class="field"><label>Data de ingresso</label><input id="socio-data" type="date"></div>
         </div>
         <div class="form-actions">
@@ -309,8 +331,8 @@
       <div class="card">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Nome</th><th>Curso</th><th>Contato</th><th>Ingresso</th><th>Status</th></tr></thead>
-            <tbody id="tbody-socios"><tr><td colspan="5" class="empty-note">Carregando…</td></tr></tbody>
+            <thead><tr><th>Nome</th><th>Curso</th><th>Contato</th><th>Ingresso</th><th>Status</th><th class="admin-only"></th></tr></thead>
+            <tbody id="tbody-socios"><tr><td colspan="6" class="empty-note">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -324,14 +346,41 @@
       <div class="toolbar">
         <div class="toolbar-left">
           <input type="month" class="select-input" id="mensalidade-mes">
-          <button class="btn btn-ghost btn-sm" id="btn-gerar-mensalidades">Gerar mensalidades do mês</button>
+          <button class="btn btn-ghost btn-sm admin-only" id="btn-gerar-mensalidades">Gerar mensalidades do mês</button>
+        </div>
+      </div>
+
+      <div class="form-panel admin-only" id="form-panel-mensalidade">
+        <div class="form-grid">
+          <div class="field"><label>Valor (Gs)</label><input id="mensalidade-valor" type="number" step="1000" min="0"></div>
+          <div class="field"><label>Status</label>
+            <select id="mensalidade-status">
+              <option value="pendente">Pendente</option>
+              <option value="pago">Pago</option>
+              <option value="atrasado">Atrasado</option>
+            </select>
+          </div>
+          <div class="field"><label>Pago em</label><input id="mensalidade-data-pagamento" type="date"></div>
+          <div class="field"><label>Forma de pagamento</label>
+            <select id="mensalidade-forma">
+              <option value="">—</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="pix">Pix</option>
+              <option value="tarjeta">Tarjeta</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="btn-cancel-mensalidade">Cancelar</button>
+          <button class="btn btn-add" id="btn-save-mensalidade">Salvar alterações</button>
         </div>
       </div>
 
       <div class="card">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Sócio</th><th>Valor</th><th>Status</th><th>Pago em</th><th>Forma</th><th></th></tr></thead>
+            <thead><tr><th>Sócio</th><th>Valor</th><th>Status</th><th>Pago em</th><th>Forma</th><th class="admin-only"></th></tr></thead>
             <tbody id="tbody-mensalidades"><tr><td colspan="6" class="empty-note">Carregando…</td></tr></tbody>
           </table>
         </div>
@@ -347,10 +396,10 @@
         <div class="toolbar-left">
           <select class="select-input" id="filtro-despesa-categoria"><option value="todas">Todas as categorias</option></select>
         </div>
-        <button class="btn btn-add" id="btn-toggle-form-despesa">+ Nova despesa</button>
+        <button class="btn btn-add admin-only" id="btn-toggle-form-despesa">+ Nova despesa</button>
       </div>
 
-      <div class="form-panel" id="form-panel-despesa">
+      <div class="form-panel admin-only" id="form-panel-despesa">
         <div class="form-grid">
           <div class="field"><label>Descrição</label><input id="despesa-descricao" type="text" required></div>
           <div class="field"><label>Categoria</label><select id="despesa-categoria"></select></div>
@@ -374,24 +423,98 @@
       <div class="card">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Descrição</th><th>Categoria</th><th>Data</th><th>Forma</th><th>Valor</th></tr></thead>
-            <tbody id="tbody-despesas"><tr><td colspan="5" class="empty-note">Carregando…</td></tr></tbody>
+            <thead><tr><th>Descrição</th><th>Categoria</th><th>Data</th><th>Forma</th><th>Valor</th><th class="admin-only"></th></tr></thead>
+            <tbody id="tbody-despesas"><tr><td colspan="6" class="empty-note">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- ---------- EVENTOS & PATROCÍNIOS ---------- -->
-    <section class="view" id="view-eventos">
-      <h2 class="section-title">Eventos &amp; Patrocínios</h2>
-      <p class="section-sub">Festas, campeonatos, vendas e receitas de patrocinadores.</p>
+    <!-- ---------- RECEITAS (entradas avulsas + patrocínios) ---------- -->
+    <section class="view" id="view-receitas">
+      <h2 class="section-title">Receitas</h2>
+      <p class="section-sub">Entradas avulsas (repasses, doações, rifas) e patrocínios de empresas.</p>
 
       <div class="toolbar">
         <div></div>
-        <button class="btn btn-add" id="btn-toggle-form-evento">+ Novo evento</button>
+        <button class="btn btn-add admin-only" id="btn-toggle-form-entrada">+ Nova entrada</button>
       </div>
 
-      <div class="form-panel" id="form-panel-evento">
+      <div class="form-panel admin-only" id="form-panel-entrada">
+        <div class="form-grid">
+          <div class="field"><label>Descrição</label><input id="entrada-descricao" type="text" required placeholder="Ex: Repasse da faculdade"></div>
+          <div class="field"><label>Categoria</label><select id="entrada-categoria"></select></div>
+          <div class="field"><label>Valor (Gs)</label><input id="entrada-valor" type="number" step="1000" min="0"></div>
+          <div class="field"><label>Data</label><input id="entrada-data" type="date"></div>
+          <div class="field"><label>Forma de pagamento</label>
+            <select id="entrada-forma">
+              <option value="">—</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="pix">Pix</option>
+              <option value="tarjeta">Tarjeta</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="btn-cancel-entrada">Cancelar</button>
+          <button class="btn btn-add" id="btn-save-entrada">Salvar entrada</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Descrição</th><th>Categoria</th><th>Data</th><th>Forma</th><th>Valor</th><th class="admin-only"></th></tr></thead>
+            <tbody id="tbody-entradas"><tr><td colspan="6" class="empty-note">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <h3 style="margin:0;color:var(--navy);font-size:15px;">Patrocínios</h3>
+        <button class="btn btn-add admin-only" id="btn-toggle-form-patrocinio">+ Novo patrocínio</button>
+      </div>
+
+      <div class="form-panel admin-only" id="form-panel-patrocinio">
+        <div class="form-grid">
+          <div class="field">
+            <label>Patrocinador (nome)</label>
+            <input id="patrocinio-patrocinador" type="text" list="lista-patrocinadores" placeholder="Nome novo ou existente" required>
+            <datalist id="lista-patrocinadores"></datalist>
+          </div>
+          <div class="field"><label>Evento vinculado</label><select id="patrocinio-evento"><option value="">Nenhum</option></select></div>
+          <div class="field"><label>Valor (Gs)</label><input id="patrocinio-valor" type="number" step="1000" min="0"></div>
+          <div class="field"><label>Data</label><input id="patrocinio-data" type="date"></div>
+          <div class="field"><label>Descrição</label><input id="patrocinio-descricao" type="text"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="btn-cancel-patrocinio">Cancelar</button>
+          <button class="btn btn-add" id="btn-save-patrocinio">Salvar patrocínio</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Patrocinador</th><th>Evento</th><th>Data</th><th>Valor</th><th>Descrição</th><th class="admin-only"></th></tr></thead>
+            <tbody id="tbody-patrocinios"><tr><td colspan="6" class="empty-note">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- EVENTOS ---------- -->
+    <section class="view" id="view-eventos">
+      <h2 class="section-title">Eventos</h2>
+      <p class="section-sub">Festas, campeonatos e vendas — receita e status de cada evento.</p>
+
+      <div class="toolbar">
+        <div></div>
+        <button class="btn btn-add admin-only" id="btn-toggle-form-evento">+ Novo evento</button>
+      </div>
+
+      <div class="form-panel admin-only" id="form-panel-evento">
         <div class="form-grid">
           <div class="field"><label>Nome do evento</label><input id="evento-nome" type="text" required></div>
           <div class="field"><label>Tipo</label>
@@ -422,39 +545,12 @@
       <div class="card" style="margin-bottom:18px;">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Evento</th><th>Tipo</th><th>Data</th><th>Prevista</th><th>Real</th><th>Status</th></tr></thead>
-            <tbody id="tbody-eventos"><tr><td colspan="6" class="empty-note">Carregando…</td></tr></tbody>
+            <thead><tr><th>Evento</th><th>Tipo</th><th>Data</th><th>Prevista</th><th>Real</th><th>Status</th><th class="admin-only"></th></tr></thead>
+            <tbody id="tbody-eventos"><tr><td colspan="7" class="empty-note">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
 
-      <div class="toolbar">
-        <h3 style="margin:0;color:var(--navy);font-size:15px;">Patrocínios</h3>
-        <button class="btn btn-add" id="btn-toggle-form-patrocinio">+ Novo patrocínio</button>
-      </div>
-
-      <div class="form-panel" id="form-panel-patrocinio">
-        <div class="form-grid">
-          <div class="field"><label>Patrocinador (nome)</label><input id="patrocinio-patrocinador" type="text" placeholder="Nome novo ou existente" required></div>
-          <div class="field"><label>Evento vinculado</label><select id="patrocinio-evento"><option value="">Nenhum</option></select></div>
-          <div class="field"><label>Valor (Gs)</label><input id="patrocinio-valor" type="number" step="1000" min="0"></div>
-          <div class="field"><label>Data</label><input id="patrocinio-data" type="date"></div>
-          <div class="field"><label>Descrição</label><input id="patrocinio-descricao" type="text"></div>
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-ghost" id="btn-cancel-patrocinio">Cancelar</button>
-          <button class="btn btn-add" id="btn-save-patrocinio">Salvar patrocínio</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="table-scroll">
-          <table>
-            <thead><tr><th>Patrocinador</th><th>Evento</th><th>Data</th><th>Valor</th><th>Descrição</th></tr></thead>
-            <tbody id="tbody-patrocinios"><tr><td colspan="5" class="empty-note">Carregando…</td></tr></tbody>
-          </table>
-        </div>
-      </div>
     </section>
 
   </main>
@@ -482,7 +578,10 @@ const STATUS_COLORS = { pago: '#1F9254', pendente: '#D97706', atrasado: '#D64545
 const STATUS_LABELS = { pago: 'Pago', pendente: 'Pendente', atrasado: 'Atrasado' };
 
 let charts = {};
-let cache = { socios: [], categorias: [], eventos: [] };
+let cache = { socios: [], categorias: [], categoriasReceita: [], eventos: [], despesas: [], mensalidadesMes: [], patrocinios: [], entradas: [] };
+
+// ids em edição por entidade — null = está no modo "novo registro"
+let editId = { socio: null, despesa: null, mensalidade: null, evento: null, patrocinio: null, entrada: null };
 
 /* ============================================================
    TOAST
@@ -496,13 +595,22 @@ function toast(msg){
 }
 
 /* ============================================================
-   AUTH
+   AUTH + PAPEL DE ACESSO
    ============================================================ */
 const loginScreen = document.getElementById('login-screen');
 const appEl = document.getElementById('app');
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const loginSubmit = document.getElementById('login-submit');
+
+let state = { papel: 'leitura', isAdmin: false };
+
+// trava de segurança no front (a trava de verdade é o RLS no banco — isso
+// aqui só evita que um usuário leitura tente uma ação e receba um erro feio)
+function requireAdmin(){
+  if (!state.isAdmin){ toast('Você está em modo somente leitura.'); return false; }
+  return true;
+}
 
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -535,10 +643,21 @@ db.auth.onAuthStateChange((event, session) => {
   }
 });
 
+async function carregarMeuPapel(userId){
+  const { data, error } = await db.from('perfis').select('papel,nome').eq('id', userId).maybeSingle();
+  if (error) console.error(error);
+  const papel = data?.papel || 'leitura';
+  state.papel = papel;
+  state.isAdmin = papel === 'admin' || papel === 'diretoria';
+  document.body.classList.toggle('read-only', !state.isAdmin);
+  if (!data) toast('Perfil não encontrado — acesso somente leitura. Peça a um admin pra te promover (promover_admin.sql).');
+}
+
 async function showApp(session){
   loginScreen.style.display = 'none';
   appEl.style.display = 'block';
   document.getElementById('user-email').textContent = session.user.email;
+  await carregarMeuPapel(session.user.id);
   await loadEverything();
 }
 
@@ -557,31 +676,40 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 /* ============================================================
    FORM PANEL TOGGLES
    ============================================================ */
-function wireToggle(btnId, panelId, cancelId){
+function wireToggle(btnId, panelId, cancelId, onReset){
   const btn = document.getElementById(btnId);
   const panel = document.getElementById(panelId);
   const cancel = document.getElementById(cancelId);
-  btn.addEventListener('click', () => panel.classList.toggle('open'));
-  cancel.addEventListener('click', () => panel.classList.remove('open'));
+  btn.addEventListener('click', () => {
+    const abrindo = !panel.classList.contains('open');
+    if (abrindo && onReset) onReset();
+    panel.classList.toggle('open');
+  });
+  cancel.addEventListener('click', () => {
+    panel.classList.remove('open');
+    if (onReset) onReset();
+  });
 }
-wireToggle('btn-toggle-form-socio','form-panel-socio','btn-cancel-socio');
-wireToggle('btn-toggle-form-despesa','form-panel-despesa','btn-cancel-despesa');
-wireToggle('btn-toggle-form-evento','form-panel-evento','btn-cancel-evento');
-wireToggle('btn-toggle-form-patrocinio','form-panel-patrocinio','btn-cancel-patrocinio');
+wireToggle('btn-toggle-form-socio','form-panel-socio','btn-cancel-socio', () => limparFormSocio());
+wireToggle('btn-toggle-form-despesa','form-panel-despesa','btn-cancel-despesa', () => limparFormDespesa());
+wireToggle('btn-toggle-form-evento','form-panel-evento','btn-cancel-evento', () => limparFormEvento());
+wireToggle('btn-toggle-form-patrocinio','form-panel-patrocinio','btn-cancel-patrocinio', () => limparFormPatrocinio());
+wireToggle('btn-toggle-form-entrada','form-panel-entrada','btn-cancel-entrada', () => limparFormEntrada());
+document.getElementById('btn-cancel-mensalidade').addEventListener('click', () => limparFormMensalidade());
 
 /* ============================================================
    LOAD EVERYTHING
    ============================================================ */
 async function loadEverything(){
-  await Promise.all([loadCategorias(), loadSocios(), loadEventosDropdownAndTable()]);
-  await Promise.all([loadDespesas(), loadMensalidades(), loadPatrocinios()]);
+  await Promise.all([loadCategorias(), loadCategoriasReceita(), loadSocios(), loadEventosDropdownAndTable()]);
+  await Promise.all([loadDespesas(), loadMensalidades(), loadPatrocinios(), loadEntradas()]);
   await loadDashboard();
 }
 
 /* ---------------- CATEGORIAS ---------------- */
 async function loadCategorias(){
   const { data, error } = await db.from('categorias_despesa').select('*').order('nome');
-  if (error) { console.error(error); toast('Erro ao carregar categorias'); return; }
+  if (error) { console.error(error); toast('Erro ao carregar categorias: ' + error.message); return; }
   cache.categorias = data || [];
   const sel = document.getElementById('despesa-categoria');
   sel.innerHTML = cache.categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
@@ -590,10 +718,25 @@ async function loadCategorias(){
     cache.categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
 }
 
+async function loadCategoriasReceita(){
+  const { data, error } = await db.from('categorias_receita').select('*').order('nome');
+  if (error) { console.error(error); toast('Erro ao carregar categorias de receita: ' + error.message); return; }
+  cache.categoriasReceita = data || [];
+  const sel = document.getElementById('entrada-categoria');
+  sel.innerHTML = cache.categoriasReceita.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+}
+
 /* ---------------- SÓCIOS ---------------- */
+function limparFormSocio(){
+  ['socio-nome','socio-matricula','socio-curso','socio-telefone','socio-email','socio-data'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('socio-status').value = 'ativo';
+  editId.socio = null;
+  document.getElementById('btn-save-socio').textContent = 'Salvar sócio';
+}
+
 async function loadSocios(){
   const { data, error } = await db.from('socios').select('*').order('nome');
-  if (error) { console.error(error); toast('Erro ao carregar sócios'); return; }
+  if (error) { console.error(error); toast('Erro ao carregar sócios: ' + error.message); return; }
   cache.socios = data || [];
   renderSocios();
 }
@@ -602,7 +745,7 @@ function renderSocios(){
   const filtro = document.getElementById('filtro-socio-status').value;
   const rows = cache.socios.filter(s => filtro === 'todos' || s.status === filtro);
   const tbody = document.getElementById('tbody-socios');
-  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty-note">Nenhum sócio encontrado.</td></tr>'; return; }
+  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhum sócio encontrado.</td></tr>'; return; }
   tbody.innerHTML = rows.map(s => `
     <tr>
       <td>${s.nome}${s.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
@@ -610,12 +753,46 @@ function renderSocios(){
       <td>${s.telefone || s.email || '—'}</td>
       <td>${fmtDate(s.data_ingresso)}</td>
       <td><span class="pill ${s.status === 'ativo' ? 'good' : 'muted'}">${s.status === 'ativo' ? 'Ativo' : 'Inativo'}</span></td>
+      <td class="admin-only"><div class="row-actions">
+        <button class="btn btn-edit btn-sm" data-id="${s.id}" data-action="editar">Editar</button>
+        <button class="btn btn-delete btn-sm" data-id="${s.id}" data-action="excluir">Excluir</button>
+      </div></td>
     </tr>
   `).join('');
+  tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarSocio(b.dataset.id)));
+  tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirSocio(b.dataset.id)));
 }
 document.getElementById('filtro-socio-status').addEventListener('change', renderSocios);
 
+function editarSocio(id){
+  const s = cache.socios.find(x => x.id === id);
+  if (!s) return;
+  editId.socio = id;
+  document.getElementById('socio-nome').value = s.nome || '';
+  document.getElementById('socio-matricula').value = s.matricula || '';
+  document.getElementById('socio-curso').value = s.curso || '';
+  document.getElementById('socio-telefone').value = s.telefone || '';
+  document.getElementById('socio-email').value = s.email || '';
+  document.getElementById('socio-status').value = s.status || 'ativo';
+  document.getElementById('socio-data').value = s.data_ingresso || '';
+  document.getElementById('btn-save-socio').textContent = 'Salvar alterações';
+  document.getElementById('form-panel-socio').classList.add('open');
+  document.getElementById('form-panel-socio').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function excluirSocio(id){
+  if (!requireAdmin()) return;
+  const s = cache.socios.find(x => x.id === id);
+  if (!confirm(`Excluir o sócio "${s?.nome || ''}"? Isso também apaga as mensalidades dele. Essa ação não pode ser desfeita.`)) return;
+  const { error } = await db.from('socios').delete().eq('id', id);
+  if (error){ toast('Erro ao excluir: ' + error.message); return; }
+  toast('Sócio excluído.');
+  await loadSocios();
+  await loadDashboard();
+}
+
 document.getElementById('btn-save-socio').addEventListener('click', async () => {
+  if (!requireAdmin()) return;
   const nome = document.getElementById('socio-nome').value.trim();
   if (!nome){ toast('Informe o nome do sócio'); return; }
   const payload = {
@@ -624,21 +801,33 @@ document.getElementById('btn-save-socio').addEventListener('click', async () => 
     curso: document.getElementById('socio-curso').value.trim() || null,
     telefone: document.getElementById('socio-telefone').value.trim() || null,
     email: document.getElementById('socio-email').value.trim() || null,
+    status: document.getElementById('socio-status').value,
     data_ingresso: document.getElementById('socio-data').value || new Date().toISOString().slice(0,10),
   };
-  const { error } = await db.from('socios').insert(payload);
+  const { error } = editId.socio
+    ? await db.from('socios').update(payload).eq('id', editId.socio)
+    : await db.from('socios').insert(payload);
   if (error){ console.error(error); toast('Erro ao salvar sócio: ' + error.message); return; }
-  toast('Sócio adicionado!');
+  toast(editId.socio ? 'Sócio atualizado!' : 'Sócio adicionado!');
   document.getElementById('form-panel-socio').classList.remove('open');
-  ['socio-nome','socio-matricula','socio-curso','socio-telefone','socio-email','socio-data'].forEach(id => document.getElementById(id).value = '');
+  limparFormSocio();
   await loadSocios();
   await loadDashboard();
 });
 
 /* ---------------- DESPESAS ---------------- */
+function limparFormDespesa(){
+  document.getElementById('despesa-descricao').value = '';
+  document.getElementById('despesa-valor').value = '';
+  document.getElementById('despesa-data').value = '';
+  document.getElementById('despesa-forma').value = 'efectivo';
+  editId.despesa = null;
+  document.getElementById('btn-save-despesa').textContent = 'Salvar despesa';
+}
+
 async function loadDespesas(){
   const { data, error } = await db.from('despesas').select('*, categorias_despesa(nome,cor)').order('data', { ascending: false });
-  if (error) { console.error(error); toast('Erro ao carregar despesas'); return; }
+  if (error) { console.error(error); toast('Erro ao carregar despesas: ' + error.message); return; }
   cache.despesas = data || [];
   renderDespesas();
 }
@@ -647,7 +836,7 @@ function renderDespesas(){
   const filtro = document.getElementById('filtro-despesa-categoria').value;
   const rows = cache.despesas.filter(d => filtro === 'todas' || d.categoria_id === filtro);
   const tbody = document.getElementById('tbody-despesas');
-  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty-note">Nenhuma despesa encontrada.</td></tr>'; return; }
+  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhuma despesa encontrada.</td></tr>'; return; }
   tbody.innerHTML = rows.map(d => `
     <tr>
       <td>${d.descricao}${d.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
@@ -655,12 +844,44 @@ function renderDespesas(){
       <td>${fmtDate(d.data)}</td>
       <td>${d.forma_pagamento || '—'}</td>
       <td><strong>${fmtMoney(d.valor)}</strong></td>
+      <td class="admin-only"><div class="row-actions">
+        <button class="btn btn-edit btn-sm" data-id="${d.id}" data-action="editar">Editar</button>
+        <button class="btn btn-delete btn-sm" data-id="${d.id}" data-action="excluir">Excluir</button>
+      </div></td>
     </tr>
   `).join('');
+  tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarDespesa(b.dataset.id)));
+  tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirDespesa(b.dataset.id)));
 }
 document.getElementById('filtro-despesa-categoria').addEventListener('change', renderDespesas);
 
+function editarDespesa(id){
+  const d = cache.despesas.find(x => x.id === id);
+  if (!d) return;
+  editId.despesa = id;
+  document.getElementById('despesa-descricao').value = d.descricao || '';
+  document.getElementById('despesa-categoria').value = d.categoria_id || '';
+  document.getElementById('despesa-valor').value = d.valor || '';
+  document.getElementById('despesa-data').value = d.data || '';
+  document.getElementById('despesa-forma').value = d.forma_pagamento || 'efectivo';
+  document.getElementById('btn-save-despesa').textContent = 'Salvar alterações';
+  document.getElementById('form-panel-despesa').classList.add('open');
+  document.getElementById('form-panel-despesa').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function excluirDespesa(id){
+  if (!requireAdmin()) return;
+  const d = cache.despesas.find(x => x.id === id);
+  if (!confirm(`Excluir a despesa "${d?.descricao || ''}"? Essa ação não pode ser desfeita.`)) return;
+  const { error } = await db.from('despesas').delete().eq('id', id);
+  if (error){ toast('Erro ao excluir: ' + error.message); return; }
+  toast('Despesa excluída.');
+  await loadDespesas();
+  await loadDashboard();
+}
+
 document.getElementById('btn-save-despesa').addEventListener('click', async () => {
+  if (!requireAdmin()) return;
   const descricao = document.getElementById('despesa-descricao').value.trim();
   const valor = parseFloat(document.getElementById('despesa-valor').value);
   if (!descricao || !valor){ toast('Informe descrição e valor'); return; }
@@ -671,12 +892,97 @@ document.getElementById('btn-save-despesa').addEventListener('click', async () =
     data: document.getElementById('despesa-data').value || new Date().toISOString().slice(0,10),
     forma_pagamento: document.getElementById('despesa-forma').value,
   };
-  const { error } = await db.from('despesas').insert(payload);
+  const { error } = editId.despesa
+    ? await db.from('despesas').update(payload).eq('id', editId.despesa)
+    : await db.from('despesas').insert(payload);
   if (error){ console.error(error); toast('Erro ao salvar despesa: ' + error.message); return; }
-  toast('Despesa registrada!');
+  toast(editId.despesa ? 'Despesa atualizada!' : 'Despesa registrada!');
   document.getElementById('form-panel-despesa').classList.remove('open');
-  ['despesa-descricao','despesa-valor','despesa-data'].forEach(id => document.getElementById(id).value = '');
+  limparFormDespesa();
   await loadDespesas();
+  await loadDashboard();
+});
+
+/* ---------------- ENTRADAS AVULSAS ---------------- */
+function limparFormEntrada(){
+  ['entrada-descricao','entrada-valor','entrada-data'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('entrada-forma').value = '';
+  editId.entrada = null;
+  document.getElementById('btn-save-entrada').textContent = 'Salvar entrada';
+}
+
+async function loadEntradas(){
+  const { data, error } = await db.from('entradas').select('*, categorias_receita(nome,cor)').order('data', { ascending: false });
+  if (error) { console.error(error); toast('Erro ao carregar entradas: ' + error.message); return; }
+  cache.entradas = data || [];
+  renderEntradas();
+}
+
+function renderEntradas(){
+  const tbody = document.getElementById('tbody-entradas');
+  if (!cache.entradas.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhuma entrada avulsa cadastrada.</td></tr>'; return; }
+  tbody.innerHTML = cache.entradas.map(e => `
+    <tr>
+      <td>${e.descricao}${e.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
+      <td><span class="pill muted" style="color:${e.categorias_receita?.cor || '#5B6B8C'};background:${(e.categorias_receita?.cor || '#5B6B8C')}1A;">${e.categorias_receita?.nome || 'Sem categoria'}</span></td>
+      <td>${fmtDate(e.data)}</td>
+      <td>${e.forma_pagamento || '—'}</td>
+      <td><strong>${fmtMoney(e.valor)}</strong></td>
+      <td class="admin-only"><div class="row-actions">
+        <button class="btn btn-edit btn-sm" data-id="${e.id}" data-action="editar">Editar</button>
+        <button class="btn btn-delete btn-sm" data-id="${e.id}" data-action="excluir">Excluir</button>
+      </div></td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarEntrada(b.dataset.id)));
+  tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirEntrada(b.dataset.id)));
+}
+
+function editarEntrada(id){
+  const e = cache.entradas.find(x => x.id === id);
+  if (!e) return;
+  editId.entrada = id;
+  document.getElementById('entrada-descricao').value = e.descricao || '';
+  document.getElementById('entrada-categoria').value = e.categoria_id || '';
+  document.getElementById('entrada-valor').value = e.valor || '';
+  document.getElementById('entrada-data').value = e.data || '';
+  document.getElementById('entrada-forma').value = e.forma_pagamento || '';
+  document.getElementById('btn-save-entrada').textContent = 'Salvar alterações';
+  document.getElementById('form-panel-entrada').classList.add('open');
+  document.getElementById('form-panel-entrada').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function excluirEntrada(id){
+  if (!requireAdmin()) return;
+  const e = cache.entradas.find(x => x.id === id);
+  if (!confirm(`Excluir a entrada "${e?.descricao || ''}"? Essa ação não pode ser desfeita.`)) return;
+  const { error } = await db.from('entradas').delete().eq('id', id);
+  if (error){ toast('Erro ao excluir: ' + error.message); return; }
+  toast('Entrada excluída.');
+  await loadEntradas();
+  await loadDashboard();
+}
+
+document.getElementById('btn-save-entrada').addEventListener('click', async () => {
+  if (!requireAdmin()) return;
+  const descricao = document.getElementById('entrada-descricao').value.trim();
+  const valor = parseFloat(document.getElementById('entrada-valor').value);
+  if (!descricao || !valor){ toast('Informe descrição e valor'); return; }
+  const payload = {
+    descricao,
+    categoria_id: document.getElementById('entrada-categoria').value || null,
+    valor,
+    data: document.getElementById('entrada-data').value || new Date().toISOString().slice(0,10),
+    forma_pagamento: document.getElementById('entrada-forma').value || null,
+  };
+  const { error } = editId.entrada
+    ? await db.from('entradas').update(payload).eq('id', editId.entrada)
+    : await db.from('entradas').insert(payload);
+  if (error){ console.error(error); toast('Erro ao salvar entrada: ' + error.message); return; }
+  toast(editId.entrada ? 'Entrada atualizada!' : 'Entrada registrada!');
+  document.getElementById('form-panel-entrada').classList.remove('open');
+  limparFormEntrada();
+  await loadEntradas();
   await loadDashboard();
 });
 
@@ -693,10 +999,15 @@ function refDateFromMonthInput(){
   return v + '-01';
 }
 
+function limparFormMensalidade(){
+  editId.mensalidade = null;
+  document.getElementById('form-panel-mensalidade').classList.remove('open');
+}
+
 async function loadMensalidades(){
   const referencia = refDateFromMonthInput();
   const { data, error } = await db.from('mensalidades').select('*, socios(nome, status)').eq('referencia', referencia);
-  if (error) { console.error(error); toast('Erro ao carregar mensalidades'); return; }
+  if (error) { console.error(error); toast('Erro ao carregar mensalidades: ' + error.message); return; }
   cache.mensalidadesMes = data || [];
   renderMensalidades();
 }
@@ -715,13 +1026,59 @@ function renderMensalidades(){
       <td><span class="pill ${m.status === 'pago' ? 'good' : (m.status === 'atrasado' ? 'critical' : 'warning')}">${STATUS_LABELS[m.status]}</span></td>
       <td>${fmtDate(m.data_pagamento)}</td>
       <td>${m.forma_pagamento || '—'}</td>
-      <td>${m.status !== 'pago' ? `<button class="btn btn-mark btn-sm" data-id="${m.id}">Marcar pago</button>` : ''}</td>
+      <td class="admin-only"><div class="row-actions">
+        ${m.status !== 'pago' ? `<button class="btn btn-mark btn-sm" data-id="${m.id}" data-action="marcar-pago">Marcar pago</button>` : ''}
+        <button class="btn btn-edit btn-sm" data-id="${m.id}" data-action="editar">Editar</button>
+        <button class="btn btn-delete btn-sm" data-id="${m.id}" data-action="excluir">Excluir</button>
+      </div></td>
     </tr>
   `).join('');
-  tbody.querySelectorAll('.btn-mark').forEach(b => b.addEventListener('click', () => marcarPago(b.dataset.id)));
+  tbody.querySelectorAll('[data-action="marcar-pago"]').forEach(b => b.addEventListener('click', () => marcarPago(b.dataset.id)));
+  tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarMensalidade(b.dataset.id)));
+  tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirMensalidade(b.dataset.id)));
 }
 
+function editarMensalidade(id){
+  const m = (cache.mensalidadesMes || []).find(x => x.id === id);
+  if (!m) return;
+  editId.mensalidade = id;
+  document.getElementById('mensalidade-valor').value = m.valor || '';
+  document.getElementById('mensalidade-status').value = m.status || 'pendente';
+  document.getElementById('mensalidade-data-pagamento').value = m.data_pagamento || '';
+  document.getElementById('mensalidade-forma').value = m.forma_pagamento || '';
+  document.getElementById('form-panel-mensalidade').classList.add('open');
+  document.getElementById('form-panel-mensalidade').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function excluirMensalidade(id){
+  if (!requireAdmin()) return;
+  if (!confirm('Excluir esta mensalidade? Essa ação não pode ser desfeita.')) return;
+  const { error } = await db.from('mensalidades').delete().eq('id', id);
+  if (error){ toast('Erro ao excluir: ' + error.message); return; }
+  toast('Mensalidade excluída.');
+  await loadMensalidades();
+  await loadDashboard();
+}
+
+document.getElementById('btn-save-mensalidade').addEventListener('click', async () => {
+  if (!requireAdmin()) return;
+  if (!editId.mensalidade){ toast('Selecione uma mensalidade pra editar.'); return; }
+  const payload = {
+    valor: parseFloat(document.getElementById('mensalidade-valor').value) || 0,
+    status: document.getElementById('mensalidade-status').value,
+    data_pagamento: document.getElementById('mensalidade-data-pagamento').value || null,
+    forma_pagamento: document.getElementById('mensalidade-forma').value || null,
+  };
+  const { error } = await db.from('mensalidades').update(payload).eq('id', editId.mensalidade);
+  if (error){ console.error(error); toast('Erro ao salvar: ' + error.message); return; }
+  toast('Mensalidade atualizada!');
+  limparFormMensalidade();
+  await loadMensalidades();
+  await loadDashboard();
+});
+
 async function marcarPago(id){
+  if (!requireAdmin()) return;
   const { error } = await db.from('mensalidades').update({
     status: 'pago',
     data_pagamento: new Date().toISOString().slice(0,10),
@@ -734,6 +1091,7 @@ async function marcarPago(id){
 }
 
 document.getElementById('btn-gerar-mensalidades').addEventListener('click', async () => {
+  if (!requireAdmin()) return;
   const referencia = refDateFromMonthInput();
   const ativos = cache.socios.filter(s => s.status === 'ativo');
   if (!ativos.length){ toast('Não há sócios ativos cadastrados'); return; }
@@ -746,18 +1104,28 @@ document.getElementById('btn-gerar-mensalidades').addEventListener('click', asyn
 });
 
 /* ---------------- EVENTOS ---------------- */
+function limparFormEvento(){
+  ['evento-nome','evento-data','evento-receita-prevista','evento-receita-real'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('evento-tipo').value = 'festa';
+  document.getElementById('evento-status').value = 'planejado';
+  editId.evento = null;
+  document.getElementById('btn-save-evento').textContent = 'Salvar evento';
+}
+
 async function loadEventosDropdownAndTable(){
   const { data, error } = await db.from('eventos').select('*').order('data', { ascending: false });
-  if (error) { console.error(error); toast('Erro ao carregar eventos'); return; }
+  if (error) { console.error(error); toast('Erro ao carregar eventos: ' + error.message); return; }
   cache.eventos = data || [];
   const sel = document.getElementById('patrocinio-evento');
+  const valorAtual = sel.value;
   sel.innerHTML = '<option value="">Nenhum</option>' + cache.eventos.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+  sel.value = valorAtual;
   renderEventos();
 }
 
 function renderEventos(){
   const tbody = document.getElementById('tbody-eventos');
-  if (!cache.eventos.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhum evento cadastrado.</td></tr>'; return; }
+  if (!cache.eventos.length){ tbody.innerHTML = '<tr><td colspan="7" class="empty-note">Nenhum evento cadastrado.</td></tr>'; return; }
   const statusPill = { planejado: 'muted', realizado: 'good', cancelado: 'critical' };
   tbody.innerHTML = cache.eventos.map(e => `
     <tr>
@@ -767,8 +1135,14 @@ function renderEventos(){
       <td>${fmtMoney(e.receita_prevista)}</td>
       <td>${fmtMoney(e.receita_real)}</td>
       <td><span class="pill ${statusPill[e.status] || 'muted'}">${e.status}</span></td>
+      <td class="admin-only"><div class="row-actions">
+        <button class="btn btn-edit btn-sm" data-id="${e.id}" data-action="editar">Editar</button>
+        <button class="btn btn-delete btn-sm" data-id="${e.id}" data-action="excluir">Excluir</button>
+      </div></td>
     </tr>
   `).join('');
+  tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarEvento(b.dataset.id)));
+  tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirEvento(b.dataset.id)));
 
   const upcoming = cache.eventos
     .filter(e => e.status === 'planejado')
@@ -785,7 +1159,35 @@ function renderEventos(){
   }
 }
 
+function editarEvento(id){
+  const e = cache.eventos.find(x => x.id === id);
+  if (!e) return;
+  editId.evento = id;
+  document.getElementById('evento-nome').value = e.nome || '';
+  document.getElementById('evento-tipo').value = e.tipo || 'festa';
+  document.getElementById('evento-data').value = e.data || '';
+  document.getElementById('evento-receita-prevista').value = e.receita_prevista || '';
+  document.getElementById('evento-receita-real').value = e.receita_real || '';
+  document.getElementById('evento-status').value = e.status || 'planejado';
+  document.getElementById('btn-save-evento').textContent = 'Salvar alterações';
+  document.getElementById('form-panel-evento').classList.add('open');
+  document.getElementById('form-panel-evento').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function excluirEvento(id){
+  if (!requireAdmin()) return;
+  const e = cache.eventos.find(x => x.id === id);
+  if (!confirm(`Excluir o evento "${e?.nome || ''}"? Patrocínios/despesas vinculados a ele não são apagados, só ficam sem evento. Essa ação não pode ser desfeita.`)) return;
+  const { error } = await db.from('eventos').delete().eq('id', id);
+  if (error){ toast('Erro ao excluir: ' + error.message); return; }
+  toast('Evento excluído.');
+  await loadEventosDropdownAndTable();
+  await loadPatrocinios();
+  await loadDashboard();
+}
+
 document.getElementById('btn-save-evento').addEventListener('click', async () => {
+  if (!requireAdmin()) return;
   const nome = document.getElementById('evento-nome').value.trim();
   const data = document.getElementById('evento-data').value;
   if (!nome || !data){ toast('Informe nome e data do evento'); return; }
@@ -797,22 +1199,31 @@ document.getElementById('btn-save-evento').addEventListener('click', async () =>
     receita_real: parseFloat(document.getElementById('evento-receita-real').value) || 0,
     status: document.getElementById('evento-status').value,
   };
-  const { error } = await db.from('eventos').insert(payload);
+  const { error } = editId.evento
+    ? await db.from('eventos').update(payload).eq('id', editId.evento)
+    : await db.from('eventos').insert(payload);
   if (error){ console.error(error); toast('Erro ao salvar evento: ' + error.message); return; }
-  toast('Evento salvo!');
+  toast(editId.evento ? 'Evento atualizado!' : 'Evento salvo!');
   document.getElementById('form-panel-evento').classList.remove('open');
-  ['evento-nome','evento-data','evento-receita-prevista','evento-receita-real'].forEach(id => document.getElementById(id).value = '');
+  limparFormEvento();
   await loadEventosDropdownAndTable();
   await loadDashboard();
 });
 
 /* ---------------- PATROCÍNIOS ---------------- */
+function limparFormPatrocinio(){
+  ['patrocinio-patrocinador','patrocinio-valor','patrocinio-data','patrocinio-descricao'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('patrocinio-evento').value = '';
+  editId.patrocinio = null;
+  document.getElementById('btn-save-patrocinio').textContent = 'Salvar patrocínio';
+}
+
 async function loadPatrocinios(){
   const { data, error } = await db.from('patrocinios').select('*, patrocinadores(nome), eventos(nome)').order('data', { ascending: false });
-  if (error) { console.error(error); toast('Erro ao carregar patrocínios'); return; }
+  if (error) { console.error(error); toast('Erro ao carregar patrocínios: ' + error.message); return; }
   cache.patrocinios = data || [];
   const tbody = document.getElementById('tbody-patrocinios');
-  if (!cache.patrocinios.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty-note">Nenhum patrocínio cadastrado.</td></tr>'; return; }
+  if (!cache.patrocinios.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhum patrocínio cadastrado.</td></tr>'; return; }
   tbody.innerHTML = cache.patrocinios.map(p => `
     <tr>
       <td>${p.patrocinadores?.nome || '—'}${p.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
@@ -820,35 +1231,78 @@ async function loadPatrocinios(){
       <td>${fmtDate(p.data)}</td>
       <td><strong>${fmtMoney(p.valor)}</strong></td>
       <td>${p.descricao || '—'}</td>
+      <td class="admin-only"><div class="row-actions">
+        <button class="btn btn-edit btn-sm" data-id="${p.id}" data-action="editar">Editar</button>
+        <button class="btn btn-delete btn-sm" data-id="${p.id}" data-action="excluir">Excluir</button>
+      </div></td>
     </tr>
   `).join('');
+  tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarPatrocinio(b.dataset.id)));
+  tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirPatrocinio(b.dataset.id)));
+
+  const listaPatrocinadores = document.getElementById('lista-patrocinadores');
+  const nomesUnicos = [...new Set(cache.patrocinios.map(p => p.patrocinadores?.nome).filter(Boolean))];
+  listaPatrocinadores.innerHTML = nomesUnicos.map(n => `<option value="${n}"></option>`).join('');
+}
+
+function editarPatrocinio(id){
+  const p = cache.patrocinios.find(x => x.id === id);
+  if (!p) return;
+  editId.patrocinio = id;
+  document.getElementById('patrocinio-patrocinador').value = p.patrocinadores?.nome || '';
+  document.getElementById('patrocinio-evento').value = p.evento_id || '';
+  document.getElementById('patrocinio-valor').value = p.valor || '';
+  document.getElementById('patrocinio-data').value = p.data || '';
+  document.getElementById('patrocinio-descricao').value = p.descricao || '';
+  document.getElementById('btn-save-patrocinio').textContent = 'Salvar alterações';
+  document.getElementById('form-panel-patrocinio').classList.add('open');
+  document.getElementById('form-panel-patrocinio').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function excluirPatrocinio(id){
+  if (!requireAdmin()) return;
+  if (!confirm('Excluir este patrocínio? Essa ação não pode ser desfeita.')) return;
+  const { error } = await db.from('patrocinios').delete().eq('id', id);
+  if (error){ toast('Erro ao excluir: ' + error.message); return; }
+  toast('Patrocínio excluído.');
+  await loadPatrocinios();
+  await loadDashboard();
 }
 
 document.getElementById('btn-save-patrocinio').addEventListener('click', async () => {
+  if (!requireAdmin()) return;
   const nomePatrocinador = document.getElementById('patrocinio-patrocinador').value.trim();
   const valor = parseFloat(document.getElementById('patrocinio-valor').value);
   if (!nomePatrocinador || !valor){ toast('Informe o patrocinador e o valor'); return; }
 
-  let { data: existente } = await db.from('patrocinadores').select('id').eq('nome', nomePatrocinador).maybeSingle();
-  let patrocinadorId = existente?.id;
-  if (!patrocinadorId){
-    const { data: novo, error: errNovo } = await db.from('patrocinadores').insert({ nome: nomePatrocinador }).select('id').single();
-    if (errNovo){ toast('Erro ao criar patrocinador: ' + errNovo.message); return; }
-    patrocinadorId = novo.id;
+  // garante o patrocinador (nome é único na tabela, então isso nunca cria
+  // duplicado nem quebra numa corrida entre dois cadastros ao mesmo tempo —
+  // esse era o ponto que travava o lançamento antes)
+  const { data: patrocinador, error: errPatrocinador } = await db
+    .from('patrocinadores')
+    .upsert({ nome: nomePatrocinador }, { onConflict: 'nome', ignoreDuplicates: false })
+    .select('id')
+    .single();
+  if (errPatrocinador){
+    console.error(errPatrocinador);
+    toast('Erro ao registrar patrocinador: ' + errPatrocinador.message);
+    return;
   }
 
   const payload = {
-    patrocinador_id: patrocinadorId,
+    patrocinador_id: patrocinador.id,
     evento_id: document.getElementById('patrocinio-evento').value || null,
     valor,
     data: document.getElementById('patrocinio-data').value || new Date().toISOString().slice(0,10),
     descricao: document.getElementById('patrocinio-descricao').value.trim() || null,
   };
-  const { error } = await db.from('patrocinios').insert(payload);
+  const { error } = editId.patrocinio
+    ? await db.from('patrocinios').update(payload).eq('id', editId.patrocinio)
+    : await db.from('patrocinios').insert(payload);
   if (error){ console.error(error); toast('Erro ao salvar patrocínio: ' + error.message); return; }
-  toast('Patrocínio registrado!');
+  toast(editId.patrocinio ? 'Patrocínio atualizado!' : 'Patrocínio registrado!');
   document.getElementById('form-panel-patrocinio').classList.remove('open');
-  ['patrocinio-patrocinador','patrocinio-valor','patrocinio-data','patrocinio-descricao'].forEach(id => document.getElementById(id).value = '');
+  limparFormPatrocinio();
   await loadPatrocinios();
   await loadDashboard();
 });
@@ -860,26 +1314,29 @@ async function loadDashboard(){
   const now = new Date();
   const mesAtual = monthKey(now);
 
-  // Receitas: mensalidades pagas + patrocínios + eventos realizados
-  const [{ data: mens }, { data: patros }, { data: evs }, { data: desp }] = await Promise.all([
+  // Receitas: mensalidades pagas + patrocínios + eventos realizados + entradas avulsas
+  const [{ data: mens }, { data: patros }, { data: evs }, { data: desp }, { data: entradasAvulsas }] = await Promise.all([
     db.from('mensalidades').select('valor,status,data_pagamento,referencia'),
     db.from('patrocinios').select('valor,data'),
     db.from('eventos').select('receita_real,status,data'),
     db.from('despesas').select('valor,data,categoria_id, categorias_despesa(nome,cor)'),
+    db.from('entradas').select('valor,data'),
   ]);
 
   const mensPagas = (mens || []).filter(m => m.status === 'pago' && m.data_pagamento);
   const totalMensalidades = mensPagas.reduce((s,m) => s + Number(m.valor), 0);
   const totalPatrocinios = (patros || []).reduce((s,p) => s + Number(p.valor), 0);
   const totalEventos = (evs || []).filter(e => e.status === 'realizado').reduce((s,e) => s + Number(e.receita_real||0), 0);
-  const totalReceitas = totalMensalidades + totalPatrocinios + totalEventos;
+  const totalEntradas = (entradasAvulsas || []).reduce((s,e) => s + Number(e.valor), 0);
+  const totalReceitas = totalMensalidades + totalPatrocinios + totalEventos + totalEntradas;
   const totalDespesas = (desp || []).reduce((s,d) => s + Number(d.valor), 0);
   const saldo = totalReceitas - totalDespesas;
 
   const inMonth = (dateStr) => dateStr && monthKey(new Date(dateStr + 'T00:00:00')) === mesAtual;
   const receitasMes = mensPagas.filter(m => inMonth(m.data_pagamento)).reduce((s,m) => s + Number(m.valor), 0)
     + (patros || []).filter(p => inMonth(p.data)).reduce((s,p) => s + Number(p.valor), 0)
-    + (evs || []).filter(e => e.status === 'realizado' && inMonth(e.data)).reduce((s,e) => s + Number(e.receita_real||0), 0);
+    + (evs || []).filter(e => e.status === 'realizado' && inMonth(e.data)).reduce((s,e) => s + Number(e.receita_real||0), 0)
+    + (entradasAvulsas || []).filter(e => inMonth(e.data)).reduce((s,e) => s + Number(e.valor), 0);
   const despesasMes = (desp || []).filter(d => inMonth(d.data)).reduce((s,d) => s + Number(d.valor), 0);
 
   document.getElementById('kpi-saldo').textContent = fmtMoney(saldo);
@@ -902,7 +1359,7 @@ async function loadDashboard(){
 
   document.getElementById('dash-updated').textContent = 'Atualizado em ' + now.toLocaleString('pt-BR');
 
-  renderFluxoCaixaChart(mens || [], patros || [], evs || [], desp || []);
+  renderFluxoCaixaChart(mens || [], patros || [], evs || [], desp || [], entradasAvulsas || []);
   renderCategoriasChart(desp || []);
   renderMensalidadesStatusChart(mensMesAtual);
 }
@@ -918,7 +1375,7 @@ function lastNMonths(n){
   return arr;
 }
 
-function renderFluxoCaixaChart(mens, patros, evs, desp){
+function renderFluxoCaixaChart(mens, patros, evs, desp, entradasAvulsas){
   const months = lastNMonths(6);
   const receitasPorMes = Object.fromEntries(months.map(m => [m.key, 0]));
   const despesasPorMes = Object.fromEntries(months.map(m => [m.key, 0]));
@@ -934,6 +1391,10 @@ function renderFluxoCaixaChart(mens, patros, evs, desp){
   evs.filter(e => e.status === 'realizado').forEach(e => {
     const k = monthKey(new Date(e.data + 'T00:00:00'));
     if (k in receitasPorMes) receitasPorMes[k] += Number(e.receita_real || 0);
+  });
+  (entradasAvulsas || []).forEach(e => {
+    const k = monthKey(new Date(e.data + 'T00:00:00'));
+    if (k in receitasPorMes) receitasPorMes[k] += Number(e.valor);
   });
   desp.forEach(d => {
     const k = monthKey(new Date(d.data + 'T00:00:00'));
