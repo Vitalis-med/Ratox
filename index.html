@@ -114,6 +114,11 @@
   .card-foot-note{font-size:11px;color:var(--text-muted);margin-top:10px;}
   .chart-wrap{position:relative;height:230px;}
   .chart-wrap.small{height:200px;}
+  .chart-empty{
+    position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    text-align:center;padding:0 12px;background:#FBFCFE;border:1.5px dashed var(--border);border-radius:10px;
+  }
+  .chart-empty.show{display:flex;}
 
   .legend-row{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:12px;font-size:12px;color:var(--text-muted);}
   .legend-row .item{display:flex;align-items:center;gap:6px;}
@@ -292,18 +297,27 @@
       <div class="grid-2">
         <div class="card">
           <h3>Fluxo de caixa mensal</h3>
-          <div class="chart-wrap"><canvas id="chart-fluxo"></canvas></div>
+          <div class="chart-wrap">
+            <canvas id="chart-fluxo"></canvas>
+            <div class="chart-empty empty-note" id="chart-fluxo-empty">Nenhum lançamento nos últimos 6 meses ainda.</div>
+          </div>
         </div>
         <div class="card">
           <h3>Mensalidades do mês</h3>
-          <div class="chart-wrap small"><canvas id="chart-mensalidades-status"></canvas></div>
+          <div class="chart-wrap small">
+            <canvas id="chart-mensalidades-status"></canvas>
+            <div class="chart-empty empty-note" id="chart-mensalidades-status-empty">Nenhuma mensalidade gerada pra este mês ainda.<br>Use "Gerar mensalidades do mês" na aba Mensalidades.</div>
+          </div>
         </div>
       </div>
 
       <div class="grid-2b">
         <div class="card">
           <h3>Despesas por categoria (últimos 6 meses)</h3>
-          <div class="chart-wrap"><canvas id="chart-categorias"></canvas></div>
+          <div class="chart-wrap">
+            <canvas id="chart-categorias"></canvas>
+            <div class="chart-empty empty-note" id="chart-categorias-empty">Nenhuma despesa nos últimos 6 meses ainda.</div>
+          </div>
         </div>
         <div class="card">
           <h3>Próximos eventos</h3>
@@ -1294,32 +1308,35 @@ async function loadEventosDropdownAndTable(){
 
 function renderEventos(){
   const tbody = document.getElementById('tbody-eventos');
-  if (!cache.eventos.length){ tbody.innerHTML = '<tr><td colspan="10" class="empty-note">Nenhum evento cadastrado.</td></tr>'; return; }
-  const statusPill = { planejado: 'muted', realizado: 'good', cancelado: 'critical' };
-  tbody.innerHTML = cache.eventos.map(e => {
-    const patrociniosDoEvento = (cache.patrocinios || []).filter(p => p.evento_id === e.id).reduce((s,p) => s + Number(p.valor), 0);
-    const despesasDoEvento = (cache.despesas || []).filter(d => d.evento_id === e.id).reduce((s,d) => s + Number(d.valor), 0);
-    const resultado = Number(e.receita_real || 0) + patrociniosDoEvento - despesasDoEvento;
-    return `
-    <tr>
-      <td>${e.nome}${e.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
-      <td style="text-transform:capitalize;">${e.tipo}</td>
-      <td>${fmtDate(e.data)}</td>
-      <td>${fmtMoney(e.receita_prevista)}</td>
-      <td>${fmtMoney(e.receita_real)}</td>
-      <td>${fmtMoney(patrociniosDoEvento)}</td>
-      <td>${fmtMoney(despesasDoEvento)}</td>
-      <td><strong style="${resultado < 0 ? 'color:var(--critical);' : 'color:var(--good);'}">${fmtMoney(resultado)}</strong></td>
-      <td><span class="pill ${statusPill[e.status] || 'muted'}">${e.status}</span></td>
-      <td class="admin-only"><div class="row-actions">
-        <button class="btn btn-edit btn-sm" data-id="${e.id}" data-action="editar">Editar</button>
-        <button class="btn btn-delete btn-sm" data-id="${e.id}" data-action="excluir">Excluir</button>
-      </div></td>
-    </tr>
-  `;
-  }).join('');
-  tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarEvento(b.dataset.id)));
-  tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirEvento(b.dataset.id)));
+  if (!cache.eventos.length){
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-note">Nenhum evento cadastrado.</td></tr>';
+  } else {
+    const statusPill = { planejado: 'muted', realizado: 'good', cancelado: 'critical' };
+    tbody.innerHTML = cache.eventos.map(e => {
+      const patrociniosDoEvento = (cache.patrocinios || []).filter(p => p.evento_id === e.id).reduce((s,p) => s + Number(p.valor), 0);
+      const despesasDoEvento = (cache.despesas || []).filter(d => d.evento_id === e.id).reduce((s,d) => s + Number(d.valor), 0);
+      const resultado = Number(e.receita_real || 0) + patrociniosDoEvento - despesasDoEvento;
+      return `
+      <tr>
+        <td>${e.nome}${e.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
+        <td style="text-transform:capitalize;">${e.tipo}</td>
+        <td>${fmtDate(e.data)}</td>
+        <td>${fmtMoney(e.receita_prevista)}</td>
+        <td>${fmtMoney(e.receita_real)}</td>
+        <td>${fmtMoney(patrociniosDoEvento)}</td>
+        <td>${fmtMoney(despesasDoEvento)}</td>
+        <td><strong style="${resultado < 0 ? 'color:var(--critical);' : 'color:var(--good);'}">${fmtMoney(resultado)}</strong></td>
+        <td><span class="pill ${statusPill[e.status] || 'muted'}">${e.status}</span></td>
+        <td class="admin-only"><div class="row-actions">
+          <button class="btn btn-edit btn-sm" data-id="${e.id}" data-action="editar">Editar</button>
+          <button class="btn btn-delete btn-sm" data-id="${e.id}" data-action="excluir">Excluir</button>
+        </div></td>
+      </tr>
+    `;
+    }).join('');
+    tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarEvento(b.dataset.id)));
+    tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirEvento(b.dataset.id)));
+  }
 
   const upcoming = cache.eventos
     .filter(e => e.status === 'planejado')
@@ -1614,6 +1631,39 @@ function lastNMonths(n){
   return arr;
 }
 
+// mostra/esconde o aviso "sem dados" por cima do canvas, sem deixar o card
+// em branco quando não tem nada pra desenhar ainda
+function toggleChartEmpty(chartId, vazio){
+  const empty = document.getElementById(chartId + '-empty');
+  const canvas = document.getElementById(chartId);
+  if (empty) empty.classList.toggle('show', vazio);
+  if (canvas) canvas.style.visibility = vazio ? 'hidden' : 'visible';
+}
+
+// plugin do Chart.js que escreve o valor na ponta de cada barra horizontal —
+// assim o número fica visível de cara, sem depender só do tooltip (e resolve
+// o contraste baixo do laranja/amarelo do sistema de cores da atlética
+// quando usados como preenchimento sólido)
+const valorNaPontaDaBarraPlugin = {
+  id: 'valorNaPontaDaBarra',
+  afterDatasetsDraw(chart){
+    const { ctx, data } = chart;
+    const meta = chart.getDatasetMeta(0);
+    ctx.save();
+    ctx.font = '600 11px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+    ctx.fillStyle = '#1A2233';
+    ctx.textBaseline = 'middle';
+    meta.data.forEach((bar, i) => {
+      const valor = data.datasets[0].data[i];
+      if (!valor) return;
+      const texto = fmtMoney(valor);
+      ctx.textAlign = 'left';
+      ctx.fillText(texto, bar.x + 8, bar.y);
+    });
+    ctx.restore();
+  }
+};
+
 function renderFluxoCaixaChart(mens, patros, evs, desp, entradasAvulsas){
   const months = lastNMonths(6);
   const receitasPorMes = Object.fromEntries(months.map(m => [m.key, 0]));
@@ -1640,8 +1690,15 @@ function renderFluxoCaixaChart(mens, patros, evs, desp, entradasAvulsas){
     if (k in despesasPorMes) despesasPorMes[k] += Number(d.valor);
   });
 
+  const totalGeral = Object.values(receitasPorMes).reduce((s,v)=>s+v,0) + Object.values(despesasPorMes).reduce((s,v)=>s+v,0);
+  if (charts.fluxo) { charts.fluxo.destroy(); charts.fluxo = null; }
+  if (!totalGeral){
+    toggleChartEmpty('chart-fluxo', true);
+    return;
+  }
+  toggleChartEmpty('chart-fluxo', false);
+
   const ctx = document.getElementById('chart-fluxo');
-  if (charts.fluxo) charts.fluxo.destroy();
   charts.fluxo = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -1678,14 +1735,17 @@ function renderCategoriasChart(desp){
   });
   const labels = Object.keys(totals).sort((a,b) => totals[b]-totals[a]);
 
-  const ctx = document.getElementById('chart-categorias');
-  if (charts.categorias) charts.categorias.destroy();
+  if (charts.categorias) { charts.categorias.destroy(); charts.categorias = null; }
   if (!labels.length){
-    ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+    toggleChartEmpty('chart-categorias', true);
     return;
   }
+  toggleChartEmpty('chart-categorias', false);
+
+  const ctx = document.getElementById('chart-categorias');
   charts.categorias = new Chart(ctx, {
     type: 'bar',
+    plugins: [valorNaPontaDaBarraPlugin],
     data: {
       labels,
       datasets: [{ data: labels.map(l => totals[l]), backgroundColor: labels.map(l => colors[l]), borderRadius: 4, maxBarThickness: 24 }]
@@ -1693,6 +1753,7 @@ function renderCategoriasChart(desp){
     options: {
       indexAxis: 'y',
       responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: 92 } },
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: (c) => fmtMoney(c.parsed.x) } }
@@ -1708,13 +1769,15 @@ function renderCategoriasChart(desp){
 function renderMensalidadesStatusChart(mensMesAtual){
   const counts = { pago: 0, pendente: 0, atrasado: 0 };
   mensMesAtual.forEach(m => { counts[m.status] = (counts[m.status]||0) + 1; });
-  const ctx = document.getElementById('chart-mensalidades-status');
-  if (charts.status) charts.status.destroy();
   const total = counts.pago + counts.pendente + counts.atrasado;
+  if (charts.status) { charts.status.destroy(); charts.status = null; }
   if (!total){
-    ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+    toggleChartEmpty('chart-mensalidades-status', true);
     return;
   }
+  toggleChartEmpty('chart-mensalidades-status', false);
+
+  const ctx = document.getElementById('chart-mensalidades-status');
   charts.status = new Chart(ctx, {
     type: 'doughnut',
     data: {
