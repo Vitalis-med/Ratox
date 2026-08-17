@@ -58,11 +58,13 @@
   }
   .btn-primary:hover{background:var(--orange-dark);}
   .btn-primary:disabled{opacity:.6;cursor:default;}
-  #login-error{
+  #login-error, #recovery-error{
     background:#FDEDEA;color:#9A2B1F;border:1px solid #F3C6BB;border-radius:8px;padding:8px 10px;
     font-size:12.5px;margin-bottom:14px;display:none;
   }
   .login-foot{margin-top:16px;text-align:center;font-size:11.5px;color:var(--text-muted);}
+  .login-foot a{color:var(--orange-dark);font-weight:600;text-decoration:none;}
+  .login-foot a:hover{text-decoration:underline;}
 
   /* ---------- APP SHELL ---------- */
   #app{display:none;min-height:100vh;}
@@ -208,7 +210,25 @@
       </div>
       <button type="submit" class="btn-primary" id="login-submit">Entrar</button>
     </form>
-    <div class="login-foot">Esqueceu a senha? Peça para um admin redefinir pelo painel do Supabase.</div>
+    <div class="login-foot"><a href="#" id="link-esqueci-senha">Esqueci minha senha</a></div>
+  </div>
+</div>
+
+<!-- ============ REDEFINIR SENHA (após clicar no link do e-mail) ============ -->
+<div id="recovery-screen" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy) 0%, var(--navy-3) 60%, var(--orange-dark) 130%);padding:20px;">
+  <div class="login-card">
+    <div class="login-brand">
+      <h1>Definir nova senha</h1>
+      <p>Escolha uma senha nova pra entrar no painel.</p>
+    </div>
+    <div id="recovery-error"></div>
+    <form id="recovery-form">
+      <div class="field">
+        <label for="recovery-password">Nova senha</label>
+        <input id="recovery-password" type="password" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+      </div>
+      <button type="submit" class="btn-primary" id="recovery-submit">Salvar nova senha</button>
+    </form>
   </div>
 </div>
 
@@ -236,6 +256,7 @@
     <button class="tab-btn" data-view="despesas">Despesas</button>
     <button class="tab-btn" data-view="receitas">Receitas</button>
     <button class="tab-btn" data-view="eventos">Eventos</button>
+    <button class="tab-btn admin-only" data-view="usuarios">Usuários</button>
   </div>
 
   <main>
@@ -303,6 +324,7 @@
             <option value="ativo">Ativos</option>
             <option value="inativo">Inativos</option>
           </select>
+          <input class="select-input" id="busca-socio" type="search" placeholder="Buscar por nome…" style="min-width:200px;">
         </div>
         <button class="btn btn-add admin-only" id="btn-toggle-form-socio">+ Novo sócio</button>
       </div>
@@ -348,6 +370,7 @@
           <input type="month" class="select-input" id="mensalidade-mes">
           <button class="btn btn-ghost btn-sm admin-only" id="btn-gerar-mensalidades">Gerar mensalidades do mês</button>
         </div>
+        <button class="btn btn-ghost btn-sm" id="btn-exportar-mensalidades">Exportar CSV</button>
       </div>
 
       <div class="form-panel admin-only" id="form-panel-mensalidade">
@@ -393,9 +416,7 @@
       <p class="section-sub">Todos os gastos da atlética.</p>
 
       <div class="toolbar">
-        <div class="toolbar-left">
-          <select class="select-input" id="filtro-despesa-categoria"><option value="todas">Todas as categorias</option></select>
-        </div>
+        <div></div>
         <button class="btn btn-add admin-only" id="btn-toggle-form-despesa">+ Nova despesa</button>
       </div>
 
@@ -413,6 +434,7 @@
               <option value="tarjeta">Tarjeta</option>
             </select>
           </div>
+          <div class="field"><label>Evento vinculado</label><select id="despesa-evento"><option value="">Nenhum</option></select></div>
         </div>
         <div class="form-actions">
           <button class="btn btn-ghost" id="btn-cancel-despesa">Cancelar</button>
@@ -420,11 +442,19 @@
         </div>
       </div>
 
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select class="select-input" id="filtro-despesa-categoria"><option value="todas">Todas as categorias</option></select>
+          <input class="select-input" id="busca-despesa" type="search" placeholder="Buscar por descrição…" style="min-width:200px;">
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-exportar-despesas">Exportar CSV</button>
+      </div>
+
       <div class="card">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Descrição</th><th>Categoria</th><th>Data</th><th>Forma</th><th>Valor</th><th class="admin-only"></th></tr></thead>
-            <tbody id="tbody-despesas"><tr><td colspan="6" class="empty-note">Carregando…</td></tr></tbody>
+            <thead><tr><th>Descrição</th><th>Categoria</th><th>Evento</th><th>Data</th><th>Forma</th><th>Valor</th><th class="admin-only"></th></tr></thead>
+            <tbody id="tbody-despesas"><tr><td colspan="7" class="empty-note">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -460,6 +490,13 @@
           <button class="btn btn-ghost" id="btn-cancel-entrada">Cancelar</button>
           <button class="btn btn-add" id="btn-save-entrada">Salvar entrada</button>
         </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <input class="select-input" id="busca-entrada" type="search" placeholder="Buscar por descrição…" style="min-width:200px;">
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-exportar-entradas">Exportar CSV</button>
       </div>
 
       <div class="card" style="margin-bottom:18px;">
@@ -545,12 +582,32 @@
       <div class="card" style="margin-bottom:18px;">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Evento</th><th>Tipo</th><th>Data</th><th>Prevista</th><th>Real</th><th>Status</th><th class="admin-only"></th></tr></thead>
-            <tbody id="tbody-eventos"><tr><td colspan="7" class="empty-note">Carregando…</td></tr></tbody>
+            <thead><tr><th>Evento</th><th>Tipo</th><th>Data</th><th>Prevista</th><th>Real</th><th>Patrocínios</th><th>Despesas</th><th>Resultado</th><th>Status</th><th class="admin-only"></th></tr></thead>
+            <tbody id="tbody-eventos"><tr><td colspan="10" class="empty-note">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="card-foot-note">Resultado = receita real do evento + patrocínios vinculados a ele − despesas vinculadas a ele.</p>
+      </div>
+
+    </section>
+
+    <!-- ---------- USUÁRIOS (só admin) ---------- -->
+    <section class="view admin-only" id="view-usuarios">
+      <h2 class="section-title">Usuários</h2>
+      <p class="section-sub">Quem tem acesso ao painel e o que cada um pode fazer. Só quem está como "Admin" ou "Diretoria" consegue cadastrar, editar ou excluir — o resto entra em modo somente leitura.</p>
+
+      <div class="card" style="margin-bottom:18px;background:#F4F8FF;border-color:#D7E3F7;">
+        <p style="margin:0;font-size:12.5px;color:var(--text-muted);">Pra alguém aparecer aqui, ela precisa ter feito login no painel pelo menos uma vez. Todo login novo entra como <strong>"Leitura"</strong> por padrão — mude o papel dela na lista abaixo pra liberar o acesso completo.</p>
+      </div>
+
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Desde</th></tr></thead>
+            <tbody id="tbody-usuarios"><tr><td colspan="4" class="empty-note">Carregando…</td></tr></tbody>
           </table>
         </div>
       </div>
-
     </section>
 
   </main>
@@ -578,7 +635,7 @@ const STATUS_COLORS = { pago: '#1F9254', pendente: '#D97706', atrasado: '#D64545
 const STATUS_LABELS = { pago: 'Pago', pendente: 'Pendente', atrasado: 'Atrasado' };
 
 let charts = {};
-let cache = { socios: [], categorias: [], categoriasReceita: [], eventos: [], despesas: [], mensalidadesMes: [], patrocinios: [], entradas: [] };
+let cache = { socios: [], categorias: [], categoriasReceita: [], eventos: [], despesas: [], mensalidadesMes: [], patrocinios: [], entradas: [], usuarios: [] };
 
 // ids em edição por entidade — null = está no modo "novo registro"
 let editId = { socio: null, despesa: null, mensalidade: null, evento: null, patrocinio: null, entrada: null };
@@ -594,16 +651,49 @@ function toast(msg){
   window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
 }
 
+// gera e baixa um CSV a partir de um array de arrays (linha 0 = cabeçalho).
+// Usa ; como separador e BOM UTF-8 pra abrir certinho acentuado no Excel.
+function exportarCSV(nomeArquivo, linhas){
+  const csv = linhas.map(linha => linha.map(campo => {
+    const v = (campo === null || campo === undefined) ? '' : String(campo);
+    return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }).join(';')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// evita clique duplo/duplo-envio: desabilita o botão enquanto o handler
+// assíncrono está rodando (senão dois cliques rápidos podiam criar dois
+// registros iguais)
+function withGuard(btnId, handler){
+  const btn = document.getElementById(btnId);
+  btn.addEventListener('click', async () => {
+    if (btn.disabled) return;
+    btn.disabled = true;
+    try { await handler(); }
+    finally { btn.disabled = false; }
+  });
+}
+
 /* ============================================================
    AUTH + PAPEL DE ACESSO
    ============================================================ */
 const loginScreen = document.getElementById('login-screen');
+const recoveryScreen = document.getElementById('recovery-screen');
 const appEl = document.getElementById('app');
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const loginSubmit = document.getElementById('login-submit');
 
-let state = { papel: 'leitura', isAdmin: false };
+let state = { papel: 'leitura', isAdmin: false, userId: null };
+let emRecuperacaoDeSenha = false;
 
 // trava de segurança no front (a trava de verdade é o RLS no banco — isso
 // aqui só evita que um usuário leitura tente uma ação e receba um erro feio)
@@ -630,15 +720,56 @@ loginForm.addEventListener('submit', async (e) => {
   }
 });
 
+document.getElementById('link-esqueci-senha').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  if (!email){ toast('Digite seu e-mail no campo acima primeiro, depois clique em "Esqueci minha senha".'); return; }
+  const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: window.location.href.split('#')[0].split('?')[0] });
+  if (error){ toast('Erro ao enviar e-mail: ' + error.message); return; }
+  toast('Se esse e-mail estiver cadastrado, você vai receber um link pra redefinir a senha.');
+});
+
+document.getElementById('recovery-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const recoveryError = document.getElementById('recovery-error');
+  const recoverySubmit = document.getElementById('recovery-submit');
+  recoveryError.style.display = 'none';
+  recoverySubmit.disabled = true;
+  recoverySubmit.textContent = 'Salvando…';
+  const password = document.getElementById('recovery-password').value;
+  const { error } = await db.auth.updateUser({ password });
+  recoverySubmit.disabled = false;
+  recoverySubmit.textContent = 'Salvar nova senha';
+  if (error){
+    recoveryError.textContent = error.message;
+    recoveryError.style.display = 'block';
+    return;
+  }
+  emRecuperacaoDeSenha = false;
+  toast('Senha atualizada! Você já está logado.');
+  recoveryScreen.style.display = 'none';
+});
+
 document.getElementById('btn-logout').addEventListener('click', async () => {
   await db.auth.signOut();
 });
 
 db.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY'){
+    // usuário clicou no link do e-mail de recuperação — pede a senha nova
+    // antes de deixar entrar no painel normalmente
+    emRecuperacaoDeSenha = true;
+    loginScreen.style.display = 'none';
+    appEl.style.display = 'none';
+    recoveryScreen.style.display = 'flex';
+    return;
+  }
+  if (emRecuperacaoDeSenha) return; // não navega pro painel até salvar a senha nova
   if (session) {
     showApp(session);
   } else {
     appEl.style.display = 'none';
+    recoveryScreen.style.display = 'none';
     loginScreen.style.display = 'flex';
   }
 });
@@ -648,13 +779,15 @@ async function carregarMeuPapel(userId){
   if (error) console.error(error);
   const papel = data?.papel || 'leitura';
   state.papel = papel;
+  state.userId = userId;
   state.isAdmin = papel === 'admin' || papel === 'diretoria';
   document.body.classList.toggle('read-only', !state.isAdmin);
-  if (!data) toast('Perfil não encontrado — acesso somente leitura. Peça a um admin pra te promover (promover_admin.sql).');
+  if (!data) toast('Perfil não encontrado — acesso somente leitura. Peça a um admin pra te promover.');
 }
 
 async function showApp(session){
   loginScreen.style.display = 'none';
+  recoveryScreen.style.display = 'none';
   appEl.style.display = 'block';
   document.getElementById('user-email').textContent = session.user.email;
   await carregarMeuPapel(session.user.id);
@@ -702,7 +835,7 @@ document.getElementById('btn-cancel-mensalidade').addEventListener('click', () =
    ============================================================ */
 async function loadEverything(){
   await Promise.all([loadCategorias(), loadCategoriasReceita(), loadSocios(), loadEventosDropdownAndTable()]);
-  await Promise.all([loadDespesas(), loadMensalidades(), loadPatrocinios(), loadEntradas()]);
+  await Promise.all([loadDespesas(), loadMensalidades(), loadPatrocinios(), loadEntradas(), loadUsuarios()]);
   await loadDashboard();
 }
 
@@ -743,7 +876,11 @@ async function loadSocios(){
 
 function renderSocios(){
   const filtro = document.getElementById('filtro-socio-status').value;
-  const rows = cache.socios.filter(s => filtro === 'todos' || s.status === filtro);
+  const busca = document.getElementById('busca-socio').value.trim().toLowerCase();
+  const rows = cache.socios.filter(s =>
+    (filtro === 'todos' || s.status === filtro) &&
+    (!busca || (s.nome || '').toLowerCase().includes(busca) || (s.matricula || '').toLowerCase().includes(busca))
+  );
   const tbody = document.getElementById('tbody-socios');
   if (!rows.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhum sócio encontrado.</td></tr>'; return; }
   tbody.innerHTML = rows.map(s => `
@@ -763,6 +900,7 @@ function renderSocios(){
   tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirSocio(b.dataset.id)));
 }
 document.getElementById('filtro-socio-status').addEventListener('change', renderSocios);
+document.getElementById('busca-socio').addEventListener('input', renderSocios);
 
 function editarSocio(id){
   const s = cache.socios.find(x => x.id === id);
@@ -791,7 +929,7 @@ async function excluirSocio(id){
   await loadDashboard();
 }
 
-document.getElementById('btn-save-socio').addEventListener('click', async () => {
+withGuard('btn-save-socio', async () => {
   if (!requireAdmin()) return;
   const nome = document.getElementById('socio-nome').value.trim();
   if (!nome){ toast('Informe o nome do sócio'); return; }
@@ -821,26 +959,33 @@ function limparFormDespesa(){
   document.getElementById('despesa-valor').value = '';
   document.getElementById('despesa-data').value = '';
   document.getElementById('despesa-forma').value = 'efectivo';
+  document.getElementById('despesa-evento').value = '';
   editId.despesa = null;
   document.getElementById('btn-save-despesa').textContent = 'Salvar despesa';
 }
 
 async function loadDespesas(){
-  const { data, error } = await db.from('despesas').select('*, categorias_despesa(nome,cor)').order('data', { ascending: false });
+  const { data, error } = await db.from('despesas').select('*, categorias_despesa(nome,cor), eventos(nome)').order('data', { ascending: false });
   if (error) { console.error(error); toast('Erro ao carregar despesas: ' + error.message); return; }
   cache.despesas = data || [];
   renderDespesas();
+  renderEventos(); // atualiza o "Resultado" de cada evento, que depende das despesas vinculadas
 }
 
 function renderDespesas(){
   const filtro = document.getElementById('filtro-despesa-categoria').value;
-  const rows = cache.despesas.filter(d => filtro === 'todas' || d.categoria_id === filtro);
+  const busca = document.getElementById('busca-despesa').value.trim().toLowerCase();
+  const rows = cache.despesas.filter(d =>
+    (filtro === 'todas' || d.categoria_id === filtro) &&
+    (!busca || (d.descricao || '').toLowerCase().includes(busca))
+  );
   const tbody = document.getElementById('tbody-despesas');
-  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhuma despesa encontrada.</td></tr>'; return; }
+  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="7" class="empty-note">Nenhuma despesa encontrada.</td></tr>'; return; }
   tbody.innerHTML = rows.map(d => `
     <tr>
       <td>${d.descricao}${d.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
       <td><span class="pill muted" style="color:${d.categorias_despesa?.cor || '#5B6B8C'};background:${(d.categorias_despesa?.cor || '#5B6B8C')}1A;">${d.categorias_despesa?.nome || 'Sem categoria'}</span></td>
+      <td>${d.eventos?.nome || '—'}</td>
       <td>${fmtDate(d.data)}</td>
       <td>${d.forma_pagamento || '—'}</td>
       <td><strong>${fmtMoney(d.valor)}</strong></td>
@@ -854,6 +999,12 @@ function renderDespesas(){
   tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirDespesa(b.dataset.id)));
 }
 document.getElementById('filtro-despesa-categoria').addEventListener('change', renderDespesas);
+document.getElementById('busca-despesa').addEventListener('input', renderDespesas);
+document.getElementById('btn-exportar-despesas').addEventListener('click', () => {
+  const linhas = [['Descrição','Categoria','Evento','Data','Forma de pagamento','Valor (Gs)']];
+  cache.despesas.forEach(d => linhas.push([d.descricao, d.categorias_despesa?.nome || '', d.eventos?.nome || '', d.data, d.forma_pagamento || '', d.valor]));
+  exportarCSV('despesas_ratox.csv', linhas);
+});
 
 function editarDespesa(id){
   const d = cache.despesas.find(x => x.id === id);
@@ -864,6 +1015,7 @@ function editarDespesa(id){
   document.getElementById('despesa-valor').value = d.valor || '';
   document.getElementById('despesa-data').value = d.data || '';
   document.getElementById('despesa-forma').value = d.forma_pagamento || 'efectivo';
+  document.getElementById('despesa-evento').value = d.evento_id || '';
   document.getElementById('btn-save-despesa').textContent = 'Salvar alterações';
   document.getElementById('form-panel-despesa').classList.add('open');
   document.getElementById('form-panel-despesa').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -880,7 +1032,7 @@ async function excluirDespesa(id){
   await loadDashboard();
 }
 
-document.getElementById('btn-save-despesa').addEventListener('click', async () => {
+withGuard('btn-save-despesa', async () => {
   if (!requireAdmin()) return;
   const descricao = document.getElementById('despesa-descricao').value.trim();
   const valor = parseFloat(document.getElementById('despesa-valor').value);
@@ -891,6 +1043,7 @@ document.getElementById('btn-save-despesa').addEventListener('click', async () =
     valor,
     data: document.getElementById('despesa-data').value || new Date().toISOString().slice(0,10),
     forma_pagamento: document.getElementById('despesa-forma').value,
+    evento_id: document.getElementById('despesa-evento').value || null,
   };
   const { error } = editId.despesa
     ? await db.from('despesas').update(payload).eq('id', editId.despesa)
@@ -919,9 +1072,11 @@ async function loadEntradas(){
 }
 
 function renderEntradas(){
+  const busca = document.getElementById('busca-entrada').value.trim().toLowerCase();
+  const rows = cache.entradas.filter(e => !busca || (e.descricao || '').toLowerCase().includes(busca));
   const tbody = document.getElementById('tbody-entradas');
-  if (!cache.entradas.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhuma entrada avulsa cadastrada.</td></tr>'; return; }
-  tbody.innerHTML = cache.entradas.map(e => `
+  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhuma entrada avulsa encontrada.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(e => `
     <tr>
       <td>${e.descricao}${e.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
       <td><span class="pill muted" style="color:${e.categorias_receita?.cor || '#5B6B8C'};background:${(e.categorias_receita?.cor || '#5B6B8C')}1A;">${e.categorias_receita?.nome || 'Sem categoria'}</span></td>
@@ -937,6 +1092,12 @@ function renderEntradas(){
   tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarEntrada(b.dataset.id)));
   tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirEntrada(b.dataset.id)));
 }
+document.getElementById('busca-entrada').addEventListener('input', renderEntradas);
+document.getElementById('btn-exportar-entradas').addEventListener('click', () => {
+  const linhas = [['Descrição','Categoria','Data','Forma de pagamento','Valor (Gs)']];
+  cache.entradas.forEach(e => linhas.push([e.descricao, e.categorias_receita?.nome || '', e.data, e.forma_pagamento || '', e.valor]));
+  exportarCSV('entradas_ratox.csv', linhas);
+});
 
 function editarEntrada(id){
   const e = cache.entradas.find(x => x.id === id);
@@ -963,7 +1124,7 @@ async function excluirEntrada(id){
   await loadDashboard();
 }
 
-document.getElementById('btn-save-entrada').addEventListener('click', async () => {
+withGuard('btn-save-entrada', async () => {
   if (!requireAdmin()) return;
   const descricao = document.getElementById('entrada-descricao').value.trim();
   const valor = parseFloat(document.getElementById('entrada-valor').value);
@@ -1037,6 +1198,12 @@ function renderMensalidades(){
   tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarMensalidade(b.dataset.id)));
   tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirMensalidade(b.dataset.id)));
 }
+document.getElementById('btn-exportar-mensalidades').addEventListener('click', () => {
+  const linhas = [['Sócio','Valor (Gs)','Status','Pago em','Forma de pagamento']];
+  (cache.mensalidadesMes || []).forEach(m => linhas.push([m.socios?.nome || '', m.valor, STATUS_LABELS[m.status] || m.status, m.data_pagamento || '', m.forma_pagamento || '']));
+  const mes = document.getElementById('mensalidade-mes').value || 'mes';
+  exportarCSV(`mensalidades_ratox_${mes}.csv`, linhas);
+});
 
 function editarMensalidade(id){
   const m = (cache.mensalidadesMes || []).find(x => x.id === id);
@@ -1060,7 +1227,7 @@ async function excluirMensalidade(id){
   await loadDashboard();
 }
 
-document.getElementById('btn-save-mensalidade').addEventListener('click', async () => {
+withGuard('btn-save-mensalidade', async () => {
   if (!requireAdmin()) return;
   if (!editId.mensalidade){ toast('Selecione uma mensalidade pra editar.'); return; }
   const payload = {
@@ -1090,7 +1257,7 @@ async function marcarPago(id){
   await loadDashboard();
 }
 
-document.getElementById('btn-gerar-mensalidades').addEventListener('click', async () => {
+withGuard('btn-gerar-mensalidades', async () => {
   if (!requireAdmin()) return;
   const referencia = refDateFromMonthInput();
   const ativos = cache.socios.filter(s => s.status === 'ativo');
@@ -1116,31 +1283,41 @@ async function loadEventosDropdownAndTable(){
   const { data, error } = await db.from('eventos').select('*').order('data', { ascending: false });
   if (error) { console.error(error); toast('Erro ao carregar eventos: ' + error.message); return; }
   cache.eventos = data || [];
-  const sel = document.getElementById('patrocinio-evento');
-  const valorAtual = sel.value;
-  sel.innerHTML = '<option value="">Nenhum</option>' + cache.eventos.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
-  sel.value = valorAtual;
+  [['patrocinio-evento', 'Nenhum'], ['despesa-evento', 'Nenhum']].forEach(([id, vazio]) => {
+    const sel = document.getElementById(id);
+    const valorAtual = sel.value;
+    sel.innerHTML = `<option value="">${vazio}</option>` + cache.eventos.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+    sel.value = valorAtual;
+  });
   renderEventos();
 }
 
 function renderEventos(){
   const tbody = document.getElementById('tbody-eventos');
-  if (!cache.eventos.length){ tbody.innerHTML = '<tr><td colspan="7" class="empty-note">Nenhum evento cadastrado.</td></tr>'; return; }
+  if (!cache.eventos.length){ tbody.innerHTML = '<tr><td colspan="10" class="empty-note">Nenhum evento cadastrado.</td></tr>'; return; }
   const statusPill = { planejado: 'muted', realizado: 'good', cancelado: 'critical' };
-  tbody.innerHTML = cache.eventos.map(e => `
+  tbody.innerHTML = cache.eventos.map(e => {
+    const patrociniosDoEvento = (cache.patrocinios || []).filter(p => p.evento_id === e.id).reduce((s,p) => s + Number(p.valor), 0);
+    const despesasDoEvento = (cache.despesas || []).filter(d => d.evento_id === e.id).reduce((s,d) => s + Number(d.valor), 0);
+    const resultado = Number(e.receita_real || 0) + patrociniosDoEvento - despesasDoEvento;
+    return `
     <tr>
       <td>${e.nome}${e.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
       <td style="text-transform:capitalize;">${e.tipo}</td>
       <td>${fmtDate(e.data)}</td>
       <td>${fmtMoney(e.receita_prevista)}</td>
       <td>${fmtMoney(e.receita_real)}</td>
+      <td>${fmtMoney(patrociniosDoEvento)}</td>
+      <td>${fmtMoney(despesasDoEvento)}</td>
+      <td><strong style="${resultado < 0 ? 'color:var(--critical);' : 'color:var(--good);'}">${fmtMoney(resultado)}</strong></td>
       <td><span class="pill ${statusPill[e.status] || 'muted'}">${e.status}</span></td>
       <td class="admin-only"><div class="row-actions">
         <button class="btn btn-edit btn-sm" data-id="${e.id}" data-action="editar">Editar</button>
         <button class="btn btn-delete btn-sm" data-id="${e.id}" data-action="excluir">Excluir</button>
       </div></td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
   tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarEvento(b.dataset.id)));
   tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirEvento(b.dataset.id)));
 
@@ -1183,10 +1360,11 @@ async function excluirEvento(id){
   toast('Evento excluído.');
   await loadEventosDropdownAndTable();
   await loadPatrocinios();
+  await loadDespesas();
   await loadDashboard();
 }
 
-document.getElementById('btn-save-evento').addEventListener('click', async () => {
+withGuard('btn-save-evento', async () => {
   if (!requireAdmin()) return;
   const nome = document.getElementById('evento-nome').value.trim();
   const data = document.getElementById('evento-data').value;
@@ -1223,26 +1401,30 @@ async function loadPatrocinios(){
   if (error) { console.error(error); toast('Erro ao carregar patrocínios: ' + error.message); return; }
   cache.patrocinios = data || [];
   const tbody = document.getElementById('tbody-patrocinios');
-  if (!cache.patrocinios.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhum patrocínio cadastrado.</td></tr>'; return; }
-  tbody.innerHTML = cache.patrocinios.map(p => `
-    <tr>
-      <td>${p.patrocinadores?.nome || '—'}${p.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
-      <td>${p.eventos?.nome || '—'}</td>
-      <td>${fmtDate(p.data)}</td>
-      <td><strong>${fmtMoney(p.valor)}</strong></td>
-      <td>${p.descricao || '—'}</td>
-      <td class="admin-only"><div class="row-actions">
-        <button class="btn btn-edit btn-sm" data-id="${p.id}" data-action="editar">Editar</button>
-        <button class="btn btn-delete btn-sm" data-id="${p.id}" data-action="excluir">Excluir</button>
-      </div></td>
-    </tr>
-  `).join('');
-  tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarPatrocinio(b.dataset.id)));
-  tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirPatrocinio(b.dataset.id)));
+  if (!cache.patrocinios.length){
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-note">Nenhum patrocínio cadastrado.</td></tr>';
+  } else {
+    tbody.innerHTML = cache.patrocinios.map(p => `
+      <tr>
+        <td>${p.patrocinadores?.nome || '—'}${p.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
+        <td>${p.eventos?.nome || '—'}</td>
+        <td>${fmtDate(p.data)}</td>
+        <td><strong>${fmtMoney(p.valor)}</strong></td>
+        <td>${p.descricao || '—'}</td>
+        <td class="admin-only"><div class="row-actions">
+          <button class="btn btn-edit btn-sm" data-id="${p.id}" data-action="editar">Editar</button>
+          <button class="btn btn-delete btn-sm" data-id="${p.id}" data-action="excluir">Excluir</button>
+        </div></td>
+      </tr>
+    `).join('');
+    tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarPatrocinio(b.dataset.id)));
+    tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirPatrocinio(b.dataset.id)));
+  }
 
   const listaPatrocinadores = document.getElementById('lista-patrocinadores');
   const nomesUnicos = [...new Set(cache.patrocinios.map(p => p.patrocinadores?.nome).filter(Boolean))];
   listaPatrocinadores.innerHTML = nomesUnicos.map(n => `<option value="${n}"></option>`).join('');
+  renderEventos(); // atualiza o "Resultado" de cada evento, que depende dos patrocínios vinculados
 }
 
 function editarPatrocinio(id){
@@ -1269,7 +1451,7 @@ async function excluirPatrocinio(id){
   await loadDashboard();
 }
 
-document.getElementById('btn-save-patrocinio').addEventListener('click', async () => {
+withGuard('btn-save-patrocinio', async () => {
   if (!requireAdmin()) return;
   const nomePatrocinador = document.getElementById('patrocinio-patrocinador').value.trim();
   const valor = parseFloat(document.getElementById('patrocinio-valor').value);
@@ -1306,6 +1488,63 @@ document.getElementById('btn-save-patrocinio').addEventListener('click', async (
   await loadPatrocinios();
   await loadDashboard();
 });
+
+/* ============================================================
+   USUÁRIOS (papéis de acesso — só admin/diretoria enxerga esta aba)
+   ============================================================ */
+async function loadUsuarios(){
+  // usuário 'leitura' também roda esta query, mas o RLS só devolve a
+  // própria linha dele — a aba fica escondida (admin-only) então isso não
+  // aparece pra ele de qualquer jeito.
+  const { data, error } = await db.from('perfis').select('*').order('nome');
+  if (error) { console.error(error); return; }
+  cache.usuarios = data || [];
+  renderUsuarios();
+}
+
+const PAPEL_LABELS = { admin: 'Admin', diretoria: 'Diretoria', leitura: 'Leitura' };
+
+function renderUsuarios(){
+  const tbody = document.getElementById('tbody-usuarios');
+  if (!cache.usuarios.length){ tbody.innerHTML = '<tr><td colspan="4" class="empty-note">Nenhum usuário encontrado — a pessoa precisa logar pelo menos uma vez antes de aparecer aqui.</td></tr>'; return; }
+  tbody.innerHTML = cache.usuarios.map(u => `
+    <tr>
+      <td>${u.nome || '—'}${u.id === state.userId ? ' <span class="badge-exemplo">você</span>' : ''}</td>
+      <td>${u.email || '—'}</td>
+      <td>
+        <select class="select-input btn-sm" data-id="${u.id}" data-papel-atual="${u.papel}" style="padding:5px 8px;">
+          <option value="admin" ${u.papel === 'admin' ? 'selected' : ''}>Admin</option>
+          <option value="diretoria" ${u.papel === 'diretoria' ? 'selected' : ''}>Diretoria</option>
+          <option value="leitura" ${u.papel === 'leitura' ? 'selected' : ''}>Leitura</option>
+        </select>
+      </td>
+      <td>${fmtDate((u.criado_em || '').slice(0,10))}</td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('select[data-id]').forEach(sel => {
+    sel.addEventListener('change', () => mudarPapelUsuario(sel));
+  });
+}
+
+async function mudarPapelUsuario(sel){
+  const id = sel.dataset.id;
+  const papelAnterior = sel.dataset.papelAtual;
+  const novoPapel = sel.value;
+  const souEuMesmo = id === state.userId;
+  const estouSaindoDoAcessoTotal = souEuMesmo && novoPapel === 'leitura' && papelAnterior !== 'leitura';
+  if (estouSaindoDoAcessoTotal && !confirm('Você está prestes a tirar o SEU PRÓPRIO acesso de admin. Depois disso você só consegue visualizar o painel — só outro admin pode te promover de volta. Continuar?')){
+    sel.value = papelAnterior;
+    return;
+  }
+  sel.disabled = true;
+  const { error } = await db.from('perfis').update({ papel: novoPapel }).eq('id', id);
+  sel.disabled = false;
+  if (error){ toast('Erro ao mudar o papel: ' + error.message); sel.value = papelAnterior; return; }
+  sel.dataset.papelAtual = novoPapel;
+  toast('Papel atualizado!');
+  await loadUsuarios();
+  if (souEuMesmo) await carregarMeuPapel(state.userId); // atualiza os próprios botões/abas na hora
+}
 
 /* ============================================================
    DASHBOARD
