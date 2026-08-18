@@ -227,6 +227,46 @@
 
   .empty-note{padding:22px;text-align:center;color:var(--text-muted);font-size:13px;}
 
+  /* ---------- COMPROVANTES (upload de arquivo) ---------- */
+  input[type=file]{font-size:12px;color:var(--text-muted);max-width:100%;}
+  .comprovante-atual{margin-top:6px;font-size:12.5px;}
+  .comprovante-atual a{color:var(--navy);font-weight:700;text-decoration:none;}
+  .comprovante-atual a:hover{text-decoration:underline;}
+  .comprovante-marcado-remover{color:var(--critical);}
+  .btn-remover-comprovante-x{background:none;border:none;color:var(--critical);cursor:pointer;font-size:15px;margin-left:6px;line-height:1;padding:0 2px;}
+  .ver-comprovante-row{margin-left:5px;text-decoration:none;font-size:12px;}
+
+  /* ---------- ORÇAMENTO DE EVENTO ---------- */
+  .orcamento-status{display:block;font-size:11px;font-weight:700;margin-top:3px;}
+  .orcamento-status.ok{color:var(--good);}
+  .orcamento-status.estourou{color:var(--critical);}
+
+  /* ---------- MODAL (tarefas do evento) ---------- */
+  .modal-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(11,31,58,.55);z-index:60;
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-backdrop.show{display:flex;}
+  .modal-box{
+    background:#fff;border-radius:var(--radius);max-width:440px;width:100%;max-height:80vh;
+    display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(11,31,58,.3);
+  }
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+  .modal-head h3{margin:0;font-size:15px;color:var(--navy);}
+  .modal-close{background:none;border:none;font-size:22px;line-height:1;color:var(--text-muted);cursor:pointer;padding:0 4px;}
+  .modal-close:hover{color:var(--navy);}
+  .modal-body{padding:16px 20px 20px;overflow-y:auto;}
+  .tarefa-add-row{display:flex;gap:8px;margin-bottom:14px;}
+  .tarefa-add-row input{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;}
+  .tarefas-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}
+  .tarefa-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);}
+  .tarefa-item:last-child{border-bottom:none;}
+  .tarefa-item label{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--navy);cursor:pointer;}
+  .tarefa-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--orange);cursor:pointer;}
+  .tarefa-item.done label span{text-decoration:line-through;color:var(--text-muted);}
+  .btn-delete-tarefa{background:none;border:none;color:var(--text-muted);font-size:17px;cursor:pointer;line-height:1;padding:0 4px;}
+  .btn-delete-tarefa:hover{color:var(--critical);}
+
   footer.app-footer{text-align:center;color:var(--text-muted);font-size:11.5px;padding:20px 0 40px;}
 
   #toast{
@@ -515,6 +555,11 @@
               <option value="tarjeta">Tarjeta</option>
             </select>
           </div>
+          <div class="field">
+            <label>Comprovante (opcional)</label>
+            <input type="file" id="mensalidade-comprovante" accept="image/*,.pdf,.heic">
+            <div class="comprovante-atual" id="mensalidade-comprovante-atual"></div>
+          </div>
         </div>
         <div class="form-actions">
           <button class="btn btn-ghost" id="btn-cancel-mensalidade">Cancelar</button>
@@ -557,6 +602,11 @@
             </select>
           </div>
           <div class="field"><label>Evento vinculado</label><select id="despesa-evento"><option value="">Nenhum</option></select></div>
+          <div class="field">
+            <label>Comprovante (opcional)</label>
+            <input type="file" id="despesa-comprovante" accept="image/*,.pdf,.heic">
+            <div class="comprovante-atual" id="despesa-comprovante-atual"></div>
+          </div>
         </div>
         <div class="form-actions">
           <button class="btn btn-ghost" id="btn-cancel-despesa">Cancelar</button>
@@ -606,6 +656,11 @@
               <option value="pix">Pix</option>
               <option value="tarjeta">Tarjeta</option>
             </select>
+          </div>
+          <div class="field">
+            <label>Comprovante (opcional)</label>
+            <input type="file" id="entrada-comprovante" accept="image/*,.pdf,.heic">
+            <div class="comprovante-atual" id="entrada-comprovante-atual"></div>
           </div>
         </div>
         <div class="form-actions">
@@ -687,6 +742,7 @@
           <div class="field"><label>Data</label><input id="evento-data" type="date"></div>
           <div class="field"><label>Receita prevista (Gs)</label><input id="evento-receita-prevista" type="number" step="1000" min="0"></div>
           <div class="field"><label>Receita real (Gs)</label><input id="evento-receita-real" type="number" step="1000" min="0"></div>
+          <div class="field"><label>Orçamento previsto de despesas (Gs)</label><input id="evento-orcamento-previsto" type="number" step="1000" min="0" placeholder="Quanto pode gastar"></div>
           <div class="field"><label>Status</label>
             <select id="evento-status">
               <option value="planejado">Planejado</option>
@@ -741,6 +797,23 @@
 
 <div id="toast"></div>
 
+<!-- ---------- MODAL: TAREFAS DO EVENTO ---------- -->
+<div class="modal-backdrop" id="modal-tarefas-backdrop">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modal-tarefas-titulo">Tarefas do evento</h3>
+      <button class="modal-close" id="btn-fechar-modal-tarefas" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="tarefa-add-row admin-only">
+        <input type="text" id="nova-tarefa-descricao" placeholder="Nova tarefa… (ex: Contratar som)" maxlength="200">
+        <button class="btn btn-add btn-sm" id="btn-add-tarefa">+ Adicionar</button>
+      </div>
+      <ul class="tarefas-list" id="lista-tarefas-evento"></ul>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    CONFIG
@@ -763,6 +836,13 @@ let cache = { socios: [], categorias: [], categoriasReceita: [], eventos: [], de
 
 // ids em edição por entidade — null = está no modo "novo registro"
 let editId = { socio: null, despesa: null, mensalidade: null, evento: null, patrocinio: null, entrada: null };
+
+// controla se o comprovante atual foi marcado pra remoção no form (antes de salvar)
+const comprovanteFlags = { despesa: false, entrada: false, mensalidade: false };
+
+// estado do modal de tarefas do evento
+let tarefasModalEventoId = null;
+let tarefasModalCache = [];
 
 /* ============================================================
    TOAST
@@ -804,6 +884,63 @@ function withGuard(btnId, handler){
     try { await handler(); }
     finally { btn.disabled = false; }
   });
+}
+
+/* ============================================================
+   COMPROVANTES (upload de recibo/nota/print de pix pro Supabase Storage)
+   ============================================================ */
+// envia o arquivo pro bucket "comprovantes" com um nome único; retorna o
+// CAMINHO salvo (não a URL — o bucket é privado)
+async function uploadComprovante(file, pasta){
+  const pontoIdx = file.name.lastIndexOf('.');
+  const ext = pontoIdx > -1 ? file.name.slice(pontoIdx + 1).toLowerCase().replace(/[^a-z0-9]/g, '') : 'bin';
+  const nomeUnico = (window.crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2));
+  const path = `${pasta}/${nomeUnico}${ext ? '.' + ext : ''}`;
+  const { error } = await db.storage.from('comprovantes').upload(path, file);
+  if (error) return { path: null, error };
+  return { path, error: null };
+}
+
+// apaga um comprovante antigo do storage — silencioso: se falhar, não trava
+// o resto do salvamento (o arquivo órfão não é um problema grave)
+async function removerComprovanteAntigo(path){
+  if (!path) return;
+  try { await db.storage.from('comprovantes').remove([path]); } catch (e) { /* ignora */ }
+}
+
+// gera um link temporário (60s) pro comprovante e abre em nova aba
+async function abrirComprovante(path){
+  if (!path) return;
+  const { data, error } = await db.storage.from('comprovantes').createSignedUrl(path, 60);
+  if (error || !data?.signedUrl){ toast('Erro ao abrir o comprovante: ' + (error?.message || '')); return; }
+  window.open(data.signedUrl, '_blank');
+}
+
+// monta o "comprovante atual" dentro de um form de edição (link pra ver +
+// botão de remover). tipo = 'despesa' | 'entrada' | 'mensalidade'
+function montarComprovanteAtualUI(tipo, path){
+  comprovanteFlags[tipo] = false;
+  const el = document.getElementById(tipo + '-comprovante-atual');
+  if (!el) return;
+  if (!path){ el.innerHTML = ''; return; }
+  el.innerHTML = `<a href="#">📎 Ver comprovante atual</a><button type="button" class="btn-remover-comprovante-x" title="Remover comprovante">&times;</button>`;
+  el.querySelector('a').addEventListener('click', (ev) => { ev.preventDefault(); abrirComprovante(path); });
+  el.querySelector('.btn-remover-comprovante-x').addEventListener('click', () => {
+    comprovanteFlags[tipo] = true;
+    el.innerHTML = '<span class="comprovante-marcado-remover">Será removido ao salvar</span>';
+  });
+}
+
+// link "📎" pra colocar direto numa célula de tabela (despesas/entradas/mensalidades)
+function comprovanteLinkInline(path){
+  if (!path) return '';
+  return ` <a href="#" class="ver-comprovante-row" data-path="${path}" title="Ver comprovante">📎</a>`;
+}
+function ligarComprovantesInline(tbody){
+  tbody.querySelectorAll('.ver-comprovante-row').forEach(a => a.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    abrirComprovante(a.dataset.path);
+  }));
 }
 
 /* ============================================================
@@ -1106,6 +1243,8 @@ function limparFormDespesa(){
   document.getElementById('despesa-data').value = '';
   document.getElementById('despesa-forma').value = 'efectivo';
   document.getElementById('despesa-evento').value = '';
+  document.getElementById('despesa-comprovante').value = '';
+  montarComprovanteAtualUI('despesa', null);
   editId.despesa = null;
   document.getElementById('btn-save-despesa').textContent = 'Salvar despesa';
 }
@@ -1134,7 +1273,7 @@ function renderDespesas(){
       <td>${d.eventos?.nome || '—'}</td>
       <td>${fmtDate(d.data)}</td>
       <td>${d.forma_pagamento || '—'}</td>
-      <td><strong>${fmtMoney(d.valor)}</strong></td>
+      <td><strong>${fmtMoney(d.valor)}</strong>${comprovanteLinkInline(d.comprovante_path)}</td>
       <td class="admin-only"><div class="row-actions">
         <button class="btn btn-edit btn-sm" data-id="${d.id}" data-action="editar">Editar</button>
         <button class="btn btn-delete btn-sm" data-id="${d.id}" data-action="excluir">Excluir</button>
@@ -1143,6 +1282,7 @@ function renderDespesas(){
   `).join('');
   tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarDespesa(b.dataset.id)));
   tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirDespesa(b.dataset.id)));
+  ligarComprovantesInline(tbody);
 }
 document.getElementById('filtro-despesa-categoria').addEventListener('change', renderDespesas);
 document.getElementById('busca-despesa').addEventListener('input', renderDespesas);
@@ -1162,6 +1302,8 @@ function editarDespesa(id){
   document.getElementById('despesa-data').value = d.data || '';
   document.getElementById('despesa-forma').value = d.forma_pagamento || 'efectivo';
   document.getElementById('despesa-evento').value = d.evento_id || '';
+  document.getElementById('despesa-comprovante').value = '';
+  montarComprovanteAtualUI('despesa', d.comprovante_path);
   document.getElementById('btn-save-despesa').textContent = 'Salvar alterações';
   document.getElementById('form-panel-despesa').classList.add('open');
   document.getElementById('form-panel-despesa').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1183,6 +1325,8 @@ withGuard('btn-save-despesa', async () => {
   const descricao = document.getElementById('despesa-descricao').value.trim();
   const valor = parseFloat(document.getElementById('despesa-valor').value);
   if (!descricao || !valor){ toast('Informe descrição e valor'); return; }
+  const anterior = editId.despesa ? cache.despesas.find(x => x.id === editId.despesa) : null;
+  const arquivo = document.getElementById('despesa-comprovante').files[0] || null;
   const payload = {
     descricao,
     categoria_id: document.getElementById('despesa-categoria').value || null,
@@ -1191,6 +1335,15 @@ withGuard('btn-save-despesa', async () => {
     forma_pagamento: document.getElementById('despesa-forma').value,
     evento_id: document.getElementById('despesa-evento').value || null,
   };
+  if (arquivo){
+    const { path, error: erroUpload } = await uploadComprovante(arquivo, 'despesas');
+    if (erroUpload){ toast('Erro ao enviar o comprovante: ' + erroUpload.message); return; }
+    payload.comprovante_path = path;
+    if (anterior?.comprovante_path) await removerComprovanteAntigo(anterior.comprovante_path);
+  } else if (comprovanteFlags.despesa && anterior?.comprovante_path){
+    await removerComprovanteAntigo(anterior.comprovante_path);
+    payload.comprovante_path = null;
+  }
   const { error } = editId.despesa
     ? await db.from('despesas').update(payload).eq('id', editId.despesa)
     : await db.from('despesas').insert(payload);
@@ -1206,6 +1359,8 @@ withGuard('btn-save-despesa', async () => {
 function limparFormEntrada(){
   ['entrada-descricao','entrada-valor','entrada-data'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('entrada-forma').value = '';
+  document.getElementById('entrada-comprovante').value = '';
+  montarComprovanteAtualUI('entrada', null);
   editId.entrada = null;
   document.getElementById('btn-save-entrada').textContent = 'Salvar entrada';
 }
@@ -1228,7 +1383,7 @@ function renderEntradas(){
       <td><span class="pill muted" style="color:${e.categorias_receita?.cor || '#5B6B8C'};background:${(e.categorias_receita?.cor || '#5B6B8C')}1A;">${e.categorias_receita?.nome || 'Sem categoria'}</span></td>
       <td>${fmtDate(e.data)}</td>
       <td>${e.forma_pagamento || '—'}</td>
-      <td><strong>${fmtMoney(e.valor)}</strong></td>
+      <td><strong>${fmtMoney(e.valor)}</strong>${comprovanteLinkInline(e.comprovante_path)}</td>
       <td class="admin-only"><div class="row-actions">
         <button class="btn btn-edit btn-sm" data-id="${e.id}" data-action="editar">Editar</button>
         <button class="btn btn-delete btn-sm" data-id="${e.id}" data-action="excluir">Excluir</button>
@@ -1237,6 +1392,7 @@ function renderEntradas(){
   `).join('');
   tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarEntrada(b.dataset.id)));
   tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirEntrada(b.dataset.id)));
+  ligarComprovantesInline(tbody);
 }
 document.getElementById('busca-entrada').addEventListener('input', renderEntradas);
 document.getElementById('btn-exportar-entradas').addEventListener('click', () => {
@@ -1254,6 +1410,8 @@ function editarEntrada(id){
   document.getElementById('entrada-valor').value = e.valor || '';
   document.getElementById('entrada-data').value = e.data || '';
   document.getElementById('entrada-forma').value = e.forma_pagamento || '';
+  document.getElementById('entrada-comprovante').value = '';
+  montarComprovanteAtualUI('entrada', e.comprovante_path);
   document.getElementById('btn-save-entrada').textContent = 'Salvar alterações';
   document.getElementById('form-panel-entrada').classList.add('open');
   document.getElementById('form-panel-entrada').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1275,6 +1433,8 @@ withGuard('btn-save-entrada', async () => {
   const descricao = document.getElementById('entrada-descricao').value.trim();
   const valor = parseFloat(document.getElementById('entrada-valor').value);
   if (!descricao || !valor){ toast('Informe descrição e valor'); return; }
+  const anterior = editId.entrada ? cache.entradas.find(x => x.id === editId.entrada) : null;
+  const arquivo = document.getElementById('entrada-comprovante').files[0] || null;
   const payload = {
     descricao,
     categoria_id: document.getElementById('entrada-categoria').value || null,
@@ -1282,6 +1442,15 @@ withGuard('btn-save-entrada', async () => {
     data: document.getElementById('entrada-data').value || new Date().toISOString().slice(0,10),
     forma_pagamento: document.getElementById('entrada-forma').value || null,
   };
+  if (arquivo){
+    const { path, error: erroUpload } = await uploadComprovante(arquivo, 'entradas');
+    if (erroUpload){ toast('Erro ao enviar o comprovante: ' + erroUpload.message); return; }
+    payload.comprovante_path = path;
+    if (anterior?.comprovante_path) await removerComprovanteAntigo(anterior.comprovante_path);
+  } else if (comprovanteFlags.entrada && anterior?.comprovante_path){
+    await removerComprovanteAntigo(anterior.comprovante_path);
+    payload.comprovante_path = null;
+  }
   const { error } = editId.entrada
     ? await db.from('entradas').update(payload).eq('id', editId.entrada)
     : await db.from('entradas').insert(payload);
@@ -1308,6 +1477,8 @@ function refDateFromMonthInput(){
 
 function limparFormMensalidade(){
   editId.mensalidade = null;
+  document.getElementById('mensalidade-comprovante').value = '';
+  montarComprovanteAtualUI('mensalidade', null);
   document.getElementById('form-panel-mensalidade').classList.remove('open');
 }
 
@@ -1332,7 +1503,7 @@ function renderMensalidades(){
       <td>${fmtMoney(m.valor)}</td>
       <td><span class="pill ${m.status === 'pago' ? 'good' : (m.status === 'atrasado' ? 'critical' : 'warning')}">${STATUS_LABELS[m.status]}</span></td>
       <td>${fmtDate(m.data_pagamento)}</td>
-      <td>${m.forma_pagamento || '—'}</td>
+      <td>${m.forma_pagamento || '—'}${comprovanteLinkInline(m.comprovante_path)}</td>
       <td class="admin-only"><div class="row-actions">
         ${m.status !== 'pago' ? `<button class="btn btn-mark btn-sm" data-id="${m.id}" data-action="marcar-pago">Marcar pago</button>` : ''}
         <button class="btn btn-edit btn-sm" data-id="${m.id}" data-action="editar">Editar</button>
@@ -1343,6 +1514,7 @@ function renderMensalidades(){
   tbody.querySelectorAll('[data-action="marcar-pago"]').forEach(b => b.addEventListener('click', () => marcarPago(b.dataset.id)));
   tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarMensalidade(b.dataset.id)));
   tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirMensalidade(b.dataset.id)));
+  ligarComprovantesInline(tbody);
 }
 document.getElementById('btn-exportar-mensalidades').addEventListener('click', () => {
   const linhas = [['Sócio','Valor (Gs)','Status','Pago em','Forma de pagamento']];
@@ -1359,6 +1531,8 @@ function editarMensalidade(id){
   document.getElementById('mensalidade-status').value = m.status || 'pendente';
   document.getElementById('mensalidade-data-pagamento').value = m.data_pagamento || '';
   document.getElementById('mensalidade-forma').value = m.forma_pagamento || '';
+  document.getElementById('mensalidade-comprovante').value = '';
+  montarComprovanteAtualUI('mensalidade', m.comprovante_path);
   document.getElementById('form-panel-mensalidade').classList.add('open');
   document.getElementById('form-panel-mensalidade').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -1376,12 +1550,23 @@ async function excluirMensalidade(id){
 withGuard('btn-save-mensalidade', async () => {
   if (!requireAdmin()) return;
   if (!editId.mensalidade){ toast('Selecione uma mensalidade pra editar.'); return; }
+  const anterior = cache.mensalidadesMes.find(x => x.id === editId.mensalidade);
+  const arquivo = document.getElementById('mensalidade-comprovante').files[0] || null;
   const payload = {
     valor: parseFloat(document.getElementById('mensalidade-valor').value) || 0,
     status: document.getElementById('mensalidade-status').value,
     data_pagamento: document.getElementById('mensalidade-data-pagamento').value || null,
     forma_pagamento: document.getElementById('mensalidade-forma').value || null,
   };
+  if (arquivo){
+    const { path, error: erroUpload } = await uploadComprovante(arquivo, 'mensalidades');
+    if (erroUpload){ toast('Erro ao enviar o comprovante: ' + erroUpload.message); return; }
+    payload.comprovante_path = path;
+    if (anterior?.comprovante_path) await removerComprovanteAntigo(anterior.comprovante_path);
+  } else if (comprovanteFlags.mensalidade && anterior?.comprovante_path){
+    await removerComprovanteAntigo(anterior.comprovante_path);
+    payload.comprovante_path = null;
+  }
   const { error } = await db.from('mensalidades').update(payload).eq('id', editId.mensalidade);
   if (error){ console.error(error); toast('Erro ao salvar: ' + error.message); return; }
   toast('Mensalidade atualizada!');
@@ -1418,7 +1603,7 @@ withGuard('btn-gerar-mensalidades', async () => {
 
 /* ---------------- EVENTOS ---------------- */
 function limparFormEvento(){
-  ['evento-nome','evento-data','evento-receita-prevista','evento-receita-real'].forEach(id => document.getElementById(id).value = '');
+  ['evento-nome','evento-data','evento-receita-prevista','evento-receita-real','evento-orcamento-previsto'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('evento-tipo').value = 'festa';
   document.getElementById('evento-status').value = 'planejado';
   editId.evento = null;
@@ -1448,15 +1633,28 @@ function renderEventos(){
       const patrociniosDoEvento = (cache.patrocinios || []).filter(p => p.evento_id === e.id).reduce((s,p) => s + Number(p.valor), 0);
       const despesasDoEvento = (cache.despesas || []).filter(d => d.evento_id === e.id).reduce((s,d) => s + Number(d.valor), 0);
       const resultado = Number(e.receita_real || 0) + patrociniosDoEvento - despesasDoEvento;
+      const orcamento = Number(e.orcamento_previsto || 0);
+      let orcamentoHtml = '';
+      if (orcamento > 0){
+        const pct = Math.round((despesasDoEvento / orcamento) * 100);
+        orcamentoHtml = despesasDoEvento > orcamento
+          ? `<span class="orcamento-status estourou">Estourou o orçamento em ${fmtMoney(despesasDoEvento - orcamento)}</span>`
+          : `<span class="orcamento-status ok">${pct}% do orçamento (${fmtMoney(orcamento)})</span>`;
+      }
       return `
       <tr>
-        <td>${e.nome}${e.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}</td>
+        <td>
+          ${e.nome}${e.eh_exemplo ? ' <span class="badge-exemplo">exemplo</span>' : ''}
+          <div class="row-actions" style="margin-top:5px;justify-content:flex-start;">
+            <button class="btn btn-ghost btn-sm" data-id="${e.id}" data-nome="${(e.nome || '').replace(/"/g,'&quot;')}" data-action="tarefas">📋 Tarefas</button>
+          </div>
+        </td>
         <td style="text-transform:capitalize;">${e.tipo}</td>
         <td>${fmtDate(e.data)}</td>
         <td>${fmtMoney(e.receita_prevista)}</td>
         <td>${fmtMoney(e.receita_real)}</td>
         <td>${fmtMoney(patrociniosDoEvento)}</td>
-        <td>${fmtMoney(despesasDoEvento)}</td>
+        <td>${fmtMoney(despesasDoEvento)}${orcamentoHtml}</td>
         <td><strong style="${resultado < 0 ? 'color:var(--critical);' : 'color:var(--good);'}">${fmtMoney(resultado)}</strong></td>
         <td><span class="pill ${statusPill[e.status] || 'muted'}">${e.status}</span></td>
         <td class="admin-only"><div class="row-actions">
@@ -1468,6 +1666,7 @@ function renderEventos(){
     }).join('');
     tbody.querySelectorAll('[data-action="editar"]').forEach(b => b.addEventListener('click', () => editarEvento(b.dataset.id)));
     tbody.querySelectorAll('[data-action="excluir"]').forEach(b => b.addEventListener('click', () => excluirEvento(b.dataset.id)));
+    tbody.querySelectorAll('[data-action="tarefas"]').forEach(b => b.addEventListener('click', () => abrirModalTarefas(b.dataset.id, b.dataset.nome)));
   }
 
   const upcoming = cache.eventos
@@ -1494,6 +1693,7 @@ function editarEvento(id){
   document.getElementById('evento-data').value = e.data || '';
   document.getElementById('evento-receita-prevista').value = e.receita_prevista || '';
   document.getElementById('evento-receita-real').value = e.receita_real || '';
+  document.getElementById('evento-orcamento-previsto').value = e.orcamento_previsto || '';
   document.getElementById('evento-status').value = e.status || 'planejado';
   document.getElementById('btn-save-evento').textContent = 'Salvar alterações';
   document.getElementById('form-panel-evento').classList.add('open');
@@ -1524,6 +1724,7 @@ withGuard('btn-save-evento', async () => {
     data,
     receita_prevista: parseFloat(document.getElementById('evento-receita-prevista').value) || 0,
     receita_real: parseFloat(document.getElementById('evento-receita-real').value) || 0,
+    orcamento_previsto: parseFloat(document.getElementById('evento-orcamento-previsto').value) || 0,
     status: document.getElementById('evento-status').value,
   };
   const { error } = editId.evento
@@ -1535,6 +1736,84 @@ withGuard('btn-save-evento', async () => {
   limparFormEvento();
   await loadEventosDropdownAndTable();
   await loadDashboard();
+});
+
+/* ---------------- TAREFAS DO EVENTO (modal) ---------------- */
+async function abrirModalTarefas(eventoId, nomeEvento){
+  tarefasModalEventoId = eventoId;
+  document.getElementById('modal-tarefas-titulo').textContent = 'Tarefas — ' + (nomeEvento || '');
+  document.getElementById('nova-tarefa-descricao').value = '';
+  document.getElementById('lista-tarefas-evento').innerHTML = '<li class="empty-note">Carregando…</li>';
+  document.getElementById('modal-tarefas-backdrop').classList.add('show');
+  await carregarTarefasEvento();
+}
+
+function fecharModalTarefas(){
+  document.getElementById('modal-tarefas-backdrop').classList.remove('show');
+  tarefasModalEventoId = null;
+  tarefasModalCache = [];
+}
+
+async function carregarTarefasEvento(){
+  if (!tarefasModalEventoId) return;
+  const { data, error } = await db.from('evento_tarefas').select('*').eq('evento_id', tarefasModalEventoId).order('ordem', { ascending: true });
+  if (error){ console.error(error); toast('Erro ao carregar tarefas: ' + error.message); return; }
+  tarefasModalCache = data || [];
+  renderTarefasModal();
+}
+
+function renderTarefasModal(){
+  const ul = document.getElementById('lista-tarefas-evento');
+  if (!tarefasModalCache.length){ ul.innerHTML = '<li class="empty-note">Nenhuma tarefa ainda. Adicione o que falta organizar pra esse evento.</li>'; return; }
+  ul.innerHTML = tarefasModalCache.map(t => `
+    <li class="tarefa-item ${t.concluida ? 'done' : ''}">
+      <label>
+        <input type="checkbox" data-id="${t.id}" ${t.concluida ? 'checked' : ''}>
+        <span>${t.descricao}</span>
+      </label>
+      <button class="btn-delete-tarefa admin-only" data-id="${t.id}" aria-label="Excluir tarefa" title="Excluir tarefa">&times;</button>
+    </li>
+  `).join('');
+  ul.querySelectorAll('input[type=checkbox]').forEach(cb => cb.addEventListener('change', () => alternarTarefa(cb.dataset.id, cb.checked)));
+  ul.querySelectorAll('.btn-delete-tarefa').forEach(b => b.addEventListener('click', () => excluirTarefa(b.dataset.id)));
+}
+
+async function alternarTarefa(id, concluida){
+  if (!requireAdmin()) { await carregarTarefasEvento(); return; }
+  const { error } = await db.from('evento_tarefas').update({ concluida }).eq('id', id);
+  if (error){ toast('Erro ao atualizar tarefa: ' + error.message); await carregarTarefasEvento(); return; }
+  await carregarTarefasEvento();
+}
+
+async function excluirTarefa(id){
+  if (!requireAdmin()) return;
+  if (!confirm('Excluir esta tarefa?')) return;
+  const { error } = await db.from('evento_tarefas').delete().eq('id', id);
+  if (error){ toast('Erro ao excluir tarefa: ' + error.message); return; }
+  await carregarTarefasEvento();
+}
+
+withGuard('btn-add-tarefa', async () => {
+  if (!requireAdmin()) return;
+  const input = document.getElementById('nova-tarefa-descricao');
+  const descricao = input.value.trim();
+  if (!descricao || !tarefasModalEventoId) return;
+  const { error } = await db.from('evento_tarefas').insert({
+    evento_id: tarefasModalEventoId,
+    descricao,
+    ordem: tarefasModalCache.length,
+  });
+  if (error){ toast('Erro ao adicionar tarefa: ' + error.message); return; }
+  input.value = '';
+  await carregarTarefasEvento();
+});
+
+document.getElementById('nova-tarefa-descricao').addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter'){ ev.preventDefault(); document.getElementById('btn-add-tarefa').click(); }
+});
+document.getElementById('btn-fechar-modal-tarefas').addEventListener('click', fecharModalTarefas);
+document.getElementById('modal-tarefas-backdrop').addEventListener('click', (ev) => {
+  if (ev.target.id === 'modal-tarefas-backdrop') fecharModalTarefas();
 });
 
 /* ---------------- PATROCÍNIOS ---------------- */
